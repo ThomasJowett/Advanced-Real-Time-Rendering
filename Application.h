@@ -117,7 +117,10 @@ private:
 	UINT _renderWidth = 1920;
 
 	ID3D11DepthStencilState* DSLessEqual;
+	ID3D11RasterizerState* RSCull;
 	ID3D11RasterizerState* RSCullNone;
+	ID3D11RasterizerState* RSWireFrame;
+	ID3D11RasterizerState* _pCurrentState;
 
 	ID3D11RasterizerState* CCWcullMode;
 	ID3D11RasterizerState* CWcullMode;
@@ -132,6 +135,8 @@ private:
 	HRESULT InitIndexBuffer();
 
 	void moveForward(int objectNumber);
+
+	ID3D11RasterizerState* ViewMode();
 
 public:
 	Application();

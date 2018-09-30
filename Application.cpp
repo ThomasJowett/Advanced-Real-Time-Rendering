@@ -72,6 +72,8 @@ Application::Application()
 
 	DSLessEqual = nullptr;
 	RSCullNone = nullptr;
+	RSCullNone = nullptr;
+	RSWireFrame = nullptr;
 }
 
 Application::~Application()
@@ -578,8 +580,20 @@ HRESULT Application::InitDevice()
 
 	ZeroMemory(&cmdesc, sizeof(D3D11_RASTERIZER_DESC));
 	cmdesc.FillMode = D3D11_FILL_SOLID;
+	cmdesc.CullMode = D3D11_CULL_BACK;
+	hr = _pd3dDevice->CreateRasterizerState(&cmdesc, &RSCull);
+
+	ZeroMemory(&cmdesc, sizeof(D3D11_RASTERIZER_DESC));
+	cmdesc.FillMode = D3D11_FILL_SOLID;
 	cmdesc.CullMode = D3D11_CULL_NONE;
 	hr = _pd3dDevice->CreateRasterizerState(&cmdesc, &RSCullNone);
+
+	ZeroMemory(&cmdesc, sizeof(D3D11_RASTERIZER_DESC));
+	cmdesc.FillMode = D3D11_FILL_WIREFRAME;
+	cmdesc.CullMode = D3D11_CULL_NONE;
+	hr = _pd3dDevice->CreateRasterizerState(&cmdesc, &RSWireFrame);
+
+	_pCurrentState = RSCull;
 
 	D3D11_DEPTH_STENCIL_DESC dssDesc;
 	ZeroMemory(&dssDesc, sizeof(D3D11_DEPTH_STENCIL_DESC));
@@ -630,7 +644,9 @@ void Application::Cleanup()
 	if (_depthStencilBuffer) _depthStencilBuffer->Release();
 
 	if (DSLessEqual) DSLessEqual->Release();
+	if (RSCull) RSCull->Release();
 	if (RSCullNone) RSCullNone->Release();
+	if (RSWireFrame) RSWireFrame->Release();
 
 	if (CCWcullMode) CCWcullMode->Release();
 	if (CWcullMode) CWcullMode->Release();
@@ -656,6 +672,25 @@ void Application::moveForward(int objectNumber)
 	Vector3D position = _gameObjects[objectNumber]->GetTransform()->_position;
 	position.z -= 0.1f;
 	_gameObjects[objectNumber]->GetTransform()->_position = position;
+}
+
+ID3D11RasterizerState * Application::ViewMode()
+{
+	//Switch View mode with F1 and F2
+	if (GetAsyncKeyState(VK_F1) & 0x8000)//F1
+	{
+		_pCurrentState = RSWireFrame;
+	}
+	else if (GetAsyncKeyState(VK_F2) & 0x8000)//F2
+	{
+		_pCurrentState = RSCull;
+	}
+	else if (GetAsyncKeyState(VK_F3) & 0x8000)//F3
+	{
+		_pCurrentState = RSCullNone;
+	}
+
+	return(_pCurrentState);
 }
 
 void Application::Update(float deltaTime)
@@ -699,7 +734,7 @@ void Application::Draw()
     //
     // Setup buffers and render scene
     //
-	_pImmediateContext->RSSetState(RSCullNone);
+	_pImmediateContext->RSSetState(ViewMode());
 
 	_pImmediateContext->IASetInputLayout(_pVertexLayout);
 
