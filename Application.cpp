@@ -100,8 +100,10 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
         return E_FAIL;
     }
 
-	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\stone.dds", nullptr, &_pTextureRV);
-	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\floor.dds", nullptr, &_pGroundTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_diffuse.dds", nullptr, &_pDiffuseStoneTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Diffuse.dds", nullptr, &_pDiffuseGroundTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_Normal.dds", nullptr, &_pNormalStoneTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Normal.dds", nullptr, &_pNormalGroundTextureRV);
 
     // Setup Camera
 	XMFLOAT3 eye = XMFLOAT3(0.0f, 2.0f, -1.0f);
@@ -147,7 +149,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	
 	GameObject * gameObject = new GameObject("Floor", transform, planeGeometry, noSpecMaterial);
 
-	gameObject->SetTextureRV(_pGroundTextureRV);
+	gameObject->SetTextureRV(_pDiffuseGroundTextureRV, TX_DIFFUSE);
+	gameObject->SetTextureRV(_pNormalGroundTextureRV, TX_NORMAL);
 
 	_gameObjects.push_back(gameObject);
 
@@ -160,7 +163,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 		position = Vector3D(-4.0f + (i * 2.0f), 0.5f, 10.0f);
 		transform = new Transform(position, Vector3D(0.0f, 0.0f, 0.0f), Vector3D(0.5f, 0.5f, 0.5f));
 		gameObject = new GameObject("Cube " + i, transform, cubeGeometry, shinyMaterial);
-		gameObject->SetTextureRV(_pTextureRV);
+		gameObject->SetTextureRV(_pDiffuseStoneTextureRV,TX_DIFFUSE);
+		gameObject->SetTextureRV(_pNormalStoneTextureRV, TX_NORMAL);
 
 		_gameObjects.push_back(gameObject);
 	}
@@ -179,7 +183,7 @@ HRESULT Application::InitShadersAndInputLayout()
     if (FAILED(hr))
     {
         MessageBox(nullptr,
-                   L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+                   L"The FX file cannot compile vertex shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
         return hr;
     }
 
@@ -199,7 +203,7 @@ HRESULT Application::InitShadersAndInputLayout()
     if (FAILED(hr))
     {
         MessageBox(nullptr,
-                   L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+                   L"The FX file cannot compile pixel shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
         return hr;
     }
 
@@ -622,9 +626,9 @@ void Application::Cleanup()
     if (_pImmediateContext) _pImmediateContext->ClearState();
 	if (_pSamplerLinear) _pSamplerLinear->Release();
 
-	if (_pTextureRV) _pTextureRV->Release();
+	//if (_pTextureRV) _pTextureRV->Release();
 
-	if (_pGroundTextureRV) _pGroundTextureRV->Release();
+	//if (_pGroundTextureRV) _pGroundTextureRV->Release();
 
     if (_pConstantBuffer) _pConstantBuffer->Release();
 
@@ -774,10 +778,12 @@ void Application::Draw()
 		cb.World = XMMatrixTranspose(gameObject->GetTransform()->GetWorldMatrix());
 
 		// Set texture
-		if (gameObject->HasTexture())
+		if (gameObject->HasTexture(TX_DIFFUSE))
 		{
-			ID3D11ShaderResourceView * textureRV = gameObject->GetTextureRV();
+			ID3D11ShaderResourceView * textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
 			_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
+			textureRV = gameObject->GetTextureRV(TX_NORMAL);
+			_pImmediateContext->PSSetShaderResources(1, 1, &textureRV);
 			cb.HasTexture = 1.0f;
 		}
 		else

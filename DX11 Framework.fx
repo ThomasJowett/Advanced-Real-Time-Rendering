@@ -3,6 +3,7 @@
 //--------------------------------------------------------------------------------------
 
 Texture2D txDiffuse : register(t0);
+Texture2D txNormal : register(t1);
 
 SamplerState samLinear : register(s0);
 
@@ -44,6 +45,7 @@ struct VS_INPUT
 {
 	float4 PosL : POSITION;
 	float3 NormL : NORMAL;
+	float3 tangent : TANGENT;
 	float2 Tex : TEXCOORD0;
 };
 
@@ -52,7 +54,7 @@ struct VS_OUTPUT
 {
     float4 PosH : SV_POSITION;
 	float3 NormW : NORMAL;
-
+	float4 TangentW : TANGENT;
 	float3 PosW : POSITION;
 	float2 Tex : TEXCOORD0;
 };
@@ -73,6 +75,9 @@ VS_OUTPUT VS(VS_INPUT input)
 
 	float3 normalW = mul(float4(input.NormL, 0.0f), World).xyz;
 	output.NormW = normalize(normalW);
+
+	float4 tangentW = mul(float4(input.tangent, 0.0f), World);
+	output.TangentW = normalize(tangentW);
 
     return output;
 }

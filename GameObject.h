@@ -9,6 +9,12 @@
 using namespace DirectX;
 using namespace std;
 
+enum TextureID
+{
+	TX_DIFFUSE = 0,
+	TX_NORMAL,
+};
+
 struct Geometry
 {
 	ID3D11Buffer * vertexBuffer;
@@ -41,9 +47,9 @@ public:
 
 	Material GetMaterial() const { return _material; }
 
-	void SetTextureRV(ID3D11ShaderResourceView * textureRV) { _textureRV = textureRV; }
-	ID3D11ShaderResourceView * GetTextureRV() const { return _textureRV; }
-	bool HasTexture() const { return _textureRV ? true : false; }
+	void SetTextureRV(ID3D11ShaderResourceView * textureRV, TextureID ID) { _textureRV[ID] = textureRV; }
+	ID3D11ShaderResourceView * GetTextureRV(TextureID ID) const { return _textureRV[ID]; }
+	bool HasTexture(TextureID ID) const { return _textureRV[ID] ? true : false; }
 
 	void SetParent(GameObject * parent) { _parent = parent; }
 
@@ -59,7 +65,7 @@ private:
 	Geometry _geometry;
 	Material _material;
 
-	ID3D11ShaderResourceView * _textureRV;
+	ID3D11ShaderResourceView * _textureRV[2];
 
 	GameObject * _parent;
 };

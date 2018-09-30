@@ -5,7 +5,7 @@ GameObject::GameObject(string type, Transform* transform, Geometry geometry, Mat
 {
 	_parent = nullptr;
 	
-	_textureRV = nullptr;
+	//_textureRV = { nullptr};
 }
 
 GameObject::~GameObject()
