@@ -104,6 +104,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Diffuse.dds", nullptr, &_pDiffuseGroundTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_Normal.dds", nullptr, &_pNormalStoneTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Normal.dds", nullptr, &_pNormalGroundTextureRV);
+	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\conenormal.dds", nullptr, &_pNormalGroundTextureRV);
 
     // Setup Camera
 	XMFLOAT3 eye = XMFLOAT3(0.0f, 2.0f, -1.0f);
@@ -117,7 +118,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	basicLight.DiffuseLight = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	basicLight.SpecularLight = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
 	basicLight.SpecularPower = 20.0f;
-	basicLight.LightVecW = XMFLOAT3(0.0f, 1.0f, -1.0f);
+	basicLight.LightVecW = XMFLOAT3(1.0f, 1.0f, -1.0f);
 
 	Geometry cubeGeometry;
 	cubeGeometry.indexBuffer = _pIndexBuffer;
@@ -307,10 +308,10 @@ HRESULT Application::InitVertexBuffer()
 	// Create vertex buffer
 	SimpleVertex planeVertices[] =
 	{
-		{ XMFLOAT3(-1.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 5.0f) },
-		{ XMFLOAT3(1.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(5.0f, 5.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(5.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 5.0f) },
+		{ XMFLOAT3(1.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(5.0f, 5.0f) },
+		{ XMFLOAT3(1.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(5.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
 	};
 
 	ZeroMemory(&bd, sizeof(bd));
@@ -723,6 +724,10 @@ void Application::Update(float deltaTime)
 	{
 		gameObject->Update(deltaTime);
 	}
+
+	counter+= deltaTime*10;
+
+	//basicLight.LightVecW.x = sin(counter);
 }
 
 void Application::Draw()

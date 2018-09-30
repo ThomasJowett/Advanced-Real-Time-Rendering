@@ -82,6 +82,24 @@ VS_OUTPUT VS(VS_INPUT input)
     return output;
 }
 
+//Helper function to convert tex tangent noraml to world space
+float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, float3 tangentW)
+{
+	//Build orthonormal basis
+	//ensure T is orthonormal to w as PS interpolation may have affected this
+	float3 N = unitNormalW;
+	float3 T = normalize(tangentW - dot(tangentW, N)*N);
+
+	//create binormal from N and T
+	float3 B = cross(N, T);
+	float3x3 TBN = float3x3(T, B, N);
+
+	//Transform from tangent space to world space
+	float3 bumpedNormalW = mul(normalMapSample, TBN);
+
+	return bumpedNormalW;
+}
+
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
@@ -93,6 +111,11 @@ float4 PS(VS_OUTPUT input) : SV_Target
 
 	// Get texture data from file
 	float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
+	float4 bumpMap = txNormal.Sample(samLinear, input.Tex);
+
+	//Expand the range of the normal value from (0, +1) to (-1, +1)
+	bumpMap = (bumpMap * 2.0f) -1.0f;
+	float3 bumpedNormalW = NormalSampleToWorldSpace(bumpMap.xyz, input.NormW, input.TangentW);
 
 	float3 ambient = float3(0.0f, 0.0f, 0.0f);
 	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
@@ -102,13 +125,13 @@ float4 PS(VS_OUTPUT input) : SV_Target
 	// Compute Colour
 
 	// Compute the reflection vector.
-	float3 r = reflect(-lightLecNorm, normalW);
+	float3 r = reflect(-lightLecNorm, bumpedNormalW);
 
 	// Determine how much specular light makes it into the eye.
 	float specularAmount = pow(max(dot(r, toEye), 0.0f), light.SpecularPower);
 
 	// Determine the diffuse light intensity that strikes the vertex.
-	float diffuseAmount = max(dot(lightLecNorm, normalW), 0.0f);
+	float diffuseAmount = max(dot(lightLecNorm, bumpedNormalW), 0.0f);
 
 	// Only display specular when there is diffuse
 	if (diffuseAmount <= 0.0f)
@@ -137,3 +160,4 @@ float4 PS(VS_OUTPUT input) : SV_Target
 
 	return finalColour;
 }
+

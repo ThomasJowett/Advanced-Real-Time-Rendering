@@ -140,6 +140,8 @@ private:
 
 	ID3D11RasterizerState* ViewMode();
 
+	float counter = 0.0f;
+
 public:
 	Application();
 	~Application();
