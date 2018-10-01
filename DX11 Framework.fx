@@ -82,7 +82,7 @@ VS_OUTPUT VS(VS_INPUT input)
     return output;
 }
 
-//Helper function to convert tex tangent noraml to world space
+//Helper function to convert tex tangent normal to world space
 float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, float3 tangentW)
 {
 	//Build orthonormal basis

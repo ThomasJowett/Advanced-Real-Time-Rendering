@@ -21,6 +21,8 @@
     <ClInclude Include="Vector.h" />
     <ClInclude Include="Quaternion.h" />
     <ClInclude Include="Transform.h" />
+    <ClInclude Include="GeometryGenerator.h" />
+    <ClInclude Include="Mesh.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
