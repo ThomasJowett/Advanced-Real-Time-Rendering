@@ -1,6 +1,6 @@
 #include "GameObject.h"
 
-GameObject::GameObject(string type, Transform* transform, Geometry geometry, Material material) 
+GameObject::GameObject(string type, Transform* transform, Mesh geometry, Material material) 
 	: _transform (transform), _geometry(geometry), _type(type), _material(material)
 {
 	_parent = nullptr;
@@ -10,6 +10,7 @@ GameObject::GameObject(string type, Transform* transform, Geometry geometry, Mat
 
 GameObject::~GameObject()
 {
+	delete _transform;
 }
 
 void GameObject::Update(float deltaTime)

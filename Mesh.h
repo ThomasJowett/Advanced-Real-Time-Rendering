@@ -1,22 +1,23 @@
 #pragma once
 
+#include <directxmath.h>
+#include <d3d11_1.h>
 #include <vector>
 
-struct Vertex
-{
-	//XMFLOAT3 PosL;
-	//XMFLOAT3 NormL;
-	//XMFLOAT3 Tangent;
-	//XMFLOAT2 Tex;
-};
+#include "Commons.h"
 
-struct IndexedModel
-{
-	std::vector<Vertex> Vertices;
-	//std::vector<UINT> Indices;
-};
+using namespace DirectX;
 
 class Mesh
 {
+public:
+	ID3D11Buffer * vertexBuffer;
+	ID3D11Buffer * indexBuffer;
+	int numberOfIndices;
 
+	UINT vertexBufferStride;
+	UINT vertexBufferOffset;
+
+	Mesh() {};
+	Mesh(IndexedModel model, ID3D11Device* d3dDevice);
 };

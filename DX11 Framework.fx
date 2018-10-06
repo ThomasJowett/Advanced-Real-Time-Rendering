@@ -4,6 +4,7 @@
 
 Texture2D txDiffuse : register(t0);
 Texture2D txNormal : register(t1);
+Texture2D txHeight : register(t2);
 
 SamplerState samLinear : register(s0);
 

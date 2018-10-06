@@ -8,6 +8,7 @@
 #include "DDSTextureLoader.h"
 #include "resource.h"
 #include "Camera.h"
+#include "Commons.h"
 
 #include <vector>
 /*
@@ -27,44 +28,7 @@
 
 using namespace DirectX;
 
-struct SimpleVertex
-{
-    XMFLOAT3 PosL;
-	XMFLOAT3 NormL;
-	XMFLOAT3 Tangent;
-	XMFLOAT2 Tex;
-};
 
-struct SurfaceInfo
-{
-	XMFLOAT4 AmbientMtrl;
-	XMFLOAT4 DiffuseMtrl;
-	XMFLOAT4 SpecularMtrl;
-};
-
-struct Light
-{
-	XMFLOAT4 AmbientLight;
-	XMFLOAT4 DiffuseLight;
-	XMFLOAT4 SpecularLight;
-
-	float SpecularPower;
-	XMFLOAT3 LightVecW;
-};
-
-struct ConstantBuffer
-{
-	XMMATRIX World;
-	XMMATRIX View;
-	XMMATRIX Projection;
-	
-	SurfaceInfo surface;
-
-	Light light;
-
-	XMFLOAT3 EyePosW;
-	float HasTexture;
-};
 
 class Application
 {
@@ -137,6 +101,7 @@ private:
 	HRESULT InitIndexBuffer();
 
 	void moveForward(int objectNumber);
+	void Rotate(int objectNumber);
 
 	ID3D11RasterizerState* ViewMode();
 

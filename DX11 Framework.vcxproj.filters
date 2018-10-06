@@ -23,6 +23,8 @@
     <ClInclude Include="Transform.h" />
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="Commons.h" />
+    <ClInclude Include="ObJLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
@@ -30,6 +32,9 @@
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="GeometryGenerator.cpp" />
+    <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="ObJLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">

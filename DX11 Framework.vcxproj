@@ -31,7 +31,7 @@
     <ProjectGuid>{B8FF81B5-9B26-4931-8353-07795FDC4043}</ProjectGuid>
     <RootNamespace>DX11 Framework</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -374,8 +374,11 @@
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="ObJLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DX11 Framework.fx">
@@ -386,10 +389,12 @@
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Commons.h" />
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="ObJLoader.h" />
     <ClInclude Include="Quaternion.h" />
     <CLInclude Include="resource.h" />
     <ClInclude Include="Transform.h" />

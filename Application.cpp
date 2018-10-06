@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "GeometryGenerator.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -100,11 +101,16 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
         return E_FAIL;
     }
 
+	ID3D11ShaderResourceView * _pNormalEarthTextureRV;
+	ID3D11ShaderResourceView *_pDiffuseEarthTextureRV;
+
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_diffuse.dds", nullptr, &_pDiffuseStoneTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Diffuse.dds", nullptr, &_pDiffuseGroundTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_Normal.dds", nullptr, &_pNormalStoneTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Normal.dds", nullptr, &_pNormalGroundTextureRV);
-	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\conenormal.dds", nullptr, &_pNormalGroundTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Earth_Normal.dds", nullptr, &_pNormalEarthTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Earth_Diffuse.dds", nullptr, &_pDiffuseEarthTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\conenormal.dds", nullptr, &_pNormalGroundTextureRV);
 
     // Setup Camera
 	XMFLOAT3 eye = XMFLOAT3(0.0f, 2.0f, -1.0f);
@@ -120,19 +126,11 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	basicLight.SpecularPower = 20.0f;
 	basicLight.LightVecW = XMFLOAT3(1.0f, 1.0f, -1.0f);
 
-	Geometry cubeGeometry;
-	cubeGeometry.indexBuffer = _pIndexBuffer;
-	cubeGeometry.vertexBuffer = _pVertexBuffer;
-	cubeGeometry.numberOfIndices = 36;
-	cubeGeometry.vertexBufferOffset = 0;
-	cubeGeometry.vertexBufferStride = sizeof(SimpleVertex);
+	Mesh cubeGeometry(GeometryGenerator::CreateCube(1.0f, 1.0f,1.0f),_pd3dDevice);
 
-	Geometry planeGeometry;
-	planeGeometry.indexBuffer = _pPlaneIndexBuffer;
-	planeGeometry.vertexBuffer = _pPlaneVertexBuffer;
-	planeGeometry.numberOfIndices = 6;
-	planeGeometry.vertexBufferOffset = 0;
-	planeGeometry.vertexBufferStride = sizeof(SimpleVertex);
+	Mesh planeGeometry(GeometryGenerator::CreateGrid(25.0f, 25.0f, 4, 4, 4, 4), _pd3dDevice);
+
+	Mesh sphereGeometry(GeometryGenerator::CreateSphere(1.0f, 20.0f, 20.0f), _pd3dDevice);
 
 	Material shinyMaterial;
 	shinyMaterial.ambient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
@@ -146,7 +144,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	noSpecMaterial.specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	noSpecMaterial.specularPower = 0.0f;
 
-	Transform* transform = new Transform(Vector3D(0.0f, 0.0f, 0.0f), Vector3D(XMConvertToRadians(-90.0f), 0.0f, 0.0f), Vector3D(15.0f, 15.0f, 15.0f));
+	Transform* transform = new Transform(Vector3D(0.0f, 0.0f, 0.0f), Vector3D(0.0f, 0.0f, 0.0f), Vector3D(1.0f, 1.0f, 1.0f));
 	
 	GameObject * gameObject = new GameObject("Floor", transform, planeGeometry, noSpecMaterial);
 
@@ -155,14 +153,20 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	_gameObjects.push_back(gameObject);
 
-	
+	transform = new Transform(Vector3D(0.0f, 1.0f, 0.0f), Quaternion(1, 0, 0, 0), Vector3D(1.0f, 1.0f, 1.0f));
+
+	gameObject = new GameObject("Sphere", transform, sphereGeometry, shinyMaterial);
+	gameObject->SetTextureRV(_pDiffuseEarthTextureRV, TX_DIFFUSE);
+	gameObject->SetTextureRV(_pNormalEarthTextureRV, TX_NORMAL);
+
+	_gameObjects.push_back(gameObject);
 
 	Vector3D position;
 
 	for (auto i = 0; i < 5; i++)
 	{
 		position = Vector3D(-4.0f + (i * 2.0f), 0.5f, 10.0f);
-		transform = new Transform(position, Vector3D(0.0f, 0.0f, 0.0f), Vector3D(0.5f, 0.5f, 0.5f));
+		transform = new Transform(position, Vector3D(0.0f, 0.0f, 0.0f), Vector3D(1.0f, 1.0f, 1.0f));
 		gameObject = new GameObject("Cube " + i, transform, cubeGeometry, shinyMaterial);
 		gameObject->SetTextureRV(_pDiffuseStoneTextureRV,TX_DIFFUSE);
 		gameObject->SetTextureRV(_pNormalStoneTextureRV, TX_NORMAL);
@@ -679,6 +683,15 @@ void Application::moveForward(int objectNumber)
 	_gameObjects[objectNumber]->GetTransform()->_position = position;
 }
 
+void Application::Rotate(int objectNumber)
+{
+	Quaternion rotation = _gameObjects[objectNumber]->GetTransform()->_rotation;
+
+	rotation.AddScaledVector(Vector3D(0.0f, 1.0f, 0.0f), 0.01f);
+	rotation.Normalize();
+	_gameObjects[objectNumber]->GetTransform()->_rotation = rotation;
+}
+
 ID3D11RasterizerState * Application::ViewMode()
 {
 	//Switch View mode with F1 and F2
@@ -704,6 +717,11 @@ void Application::Update(float deltaTime)
 	if (GetAsyncKeyState('1'))
 	{
 		moveForward(1);
+	}
+
+	if (GetAsyncKeyState('2'))
+	{
+		Rotate(1);
 	}
 
 	// Update camera

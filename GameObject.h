@@ -5,6 +5,7 @@
 #include <string>
 
 #include "Transform.h"
+#include "Mesh.h"
 
 using namespace DirectX;
 using namespace std;
@@ -13,17 +14,12 @@ enum TextureID
 {
 	TX_DIFFUSE = 0,
 	TX_NORMAL,
+	TX_HEIGHTMAP,
+
+	TX_NUMBER_OF_TEXTURES
 };
 
-struct Geometry
-{
-	ID3D11Buffer * vertexBuffer;
-	ID3D11Buffer * indexBuffer;
-	int numberOfIndices;
 
-	UINT vertexBufferStride;
-	UINT vertexBufferOffset;
-};
 
 struct Material
 {
@@ -36,14 +32,14 @@ struct Material
 class GameObject
 {
 public:
-	GameObject(string type, Transform* transform, Geometry geometry, Material material);
+	GameObject(string type, Transform* transform, Mesh geometry, Material material);
 	~GameObject();
 
 	Transform* GetTransform() const { return _transform; }
 
 	string GetType() const { return _type; }
 
-	Geometry GetGeometryData() const { return _geometry; }
+	Mesh GetGeometryData() const { return _geometry; }
 
 	Material GetMaterial() const { return _material; }
 
@@ -62,10 +58,10 @@ private:
 
 	Transform* _transform;
 
-	Geometry _geometry;
+	Mesh _geometry;
 	Material _material;
 
-	ID3D11ShaderResourceView * _textureRV[2];
+	ID3D11ShaderResourceView * _textureRV[TX_NUMBER_OF_TEXTURES];
 
 	GameObject * _parent;
 };
