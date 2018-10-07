@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "GeometryGenerator.h"
+#include "ObJLoader.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -104,13 +105,18 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	ID3D11ShaderResourceView * _pNormalEarthTextureRV;
 	ID3D11ShaderResourceView *_pDiffuseEarthTextureRV;
 
-	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_diffuse.dds", nullptr, &_pDiffuseStoneTextureRV);
+	ID3D11ShaderResourceView * _pNormalSpaceManTextureRV;
+	ID3D11ShaderResourceView *_pDiffuseSpaceManTextureRV;
+
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Diffuse.dds", nullptr, &_pDiffuseSpaceManTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Diffuse.dds", nullptr, &_pDiffuseGroundTextureRV);
-	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_Normal.dds", nullptr, &_pNormalStoneTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Normal.dds", nullptr, &_pNormalSpaceManTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Normal.dds", nullptr, &_pNormalGroundTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Earth_Normal.dds", nullptr, &_pNormalEarthTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Earth_Diffuse.dds", nullptr, &_pDiffuseEarthTextureRV);
-	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\conenormal.dds", nullptr, &_pNormalGroundTextureRV);
+	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\conenormal.dds", nullptr, &_pNormalGroundTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_Diffuse.dds", nullptr, &_pDiffuseStoneTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_Normal.dds", nullptr, &_pNormalStoneTextureRV);
 
     // Setup Camera
 	XMFLOAT3 eye = XMFLOAT3(0.0f, 2.0f, -1.0f);
@@ -131,6 +137,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	Mesh planeGeometry(GeometryGenerator::CreateGrid(25.0f, 25.0f, 4, 4, 4, 4), _pd3dDevice);
 
 	Mesh sphereGeometry(GeometryGenerator::CreateSphere(1.0f, 20.0f, 20.0f), _pd3dDevice);
+
+	Mesh SpaceManGeometry(OBJLoader::Load("Resources\\SpaceMan.obj", true), _pd3dDevice);
 
 	Material shinyMaterial;
 	shinyMaterial.ambient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);

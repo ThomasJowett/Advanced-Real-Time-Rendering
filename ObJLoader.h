@@ -1,39 +1,29 @@
 #pragma once
 #include <string>
+#include <map>			//For fast searching when re-creating the index buffer
+
 
 #include "Commons.h"
 #include "Vector.h"
 
-struct OBJIndex
+namespace OBJLoader
 {
-	unsigned int vertexIndex;
-	unsigned int uvIndex;
-	unsigned int normalIndex;
+	IndexedModel Load(const char* filename, bool invertCoordinates);
 
-	bool operator<(const OBJIndex& r) const { return vertexIndex < r.vertexIndex; }
-};
+	//searches to see if a similar vertex already exists in the buffer
+	bool FindSimilarVertex(const SimpleVertex& vertex, std::map<SimpleVertex, unsigned short>& vertToIndexMap, unsigned short& index);
 
-struct OBJModel
-{
-	std::vector<OBJIndex> OBJIndices;
-	std::vector<Vector3D> vertices;
-	std::vector<Vector2D> uvs;
-	std::vector<Vector3D> normals;
-	bool hasUVs;
-	bool hasNormals;
-};
+	//Re-Creates a single index buffer from the 3 given in the OBJ file
+	void CreateIndices(const std::vector<XMFLOAT3>& inVertices, 
+		const std::vector<XMFLOAT2>& inTexCoords, 
+		const std::vector<XMFLOAT3>& inNormals, 
+		std::vector<unsigned short>& outIndices, 
+		std::vector<XMFLOAT3>& outVertices, 
+		std::vector<XMFLOAT2>& outTexCoords, 
+		std::vector<XMFLOAT3>& outNormals);
 
-class OBJLoader
-{
-public:
-	static IndexedModel Load(const char* filename, bool invertCoordinates);
-private:
-	static IndexedModel ToIndexedModel(OBJModel model);
+	//Creates the tangents from the normals and texture coordinates
+	void InsertTangentsIntoArray(SimpleVertex* vertices, int vertexCount);
 
-	unsigned int FindLastVertexIndex(const std::vector<OBJIndex*>& indexLookup, const OBJIndex* currentIndex, const IndexedModel& result);
-	void CreateOBJFace(const std::string& line);
-
-	Vector2D ParseOBJVec2(const std::string& line);
-	Vector3D ParseOBJVec3(const std::string& line);
-	OBJIndex ParseOBJIndex(const std::string& token, bool* hasUVs, bool* hasNormals);
+	XMFLOAT3 CalculateTangent(SimpleVertex v0, SimpleVertex v1, SimpleVertex v2);
 };

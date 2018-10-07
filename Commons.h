@@ -23,6 +23,11 @@ struct SimpleVertex
 		float u, float v)
 		: PosL(px, py, pz), NormL(nx, ny, nz),
 		Tangent(tx, ty, tz), Tex(u, v) {}
+
+	bool operator<(const SimpleVertex other)const
+	{
+		return memcmp((void*)this, (void*)&other, sizeof(SimpleVertex)) > 0;
+	};
 };
 
 struct SurfaceInfo
