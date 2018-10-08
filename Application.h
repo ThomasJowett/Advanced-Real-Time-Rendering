@@ -41,8 +41,10 @@ private:
 	ID3D11DeviceContext*    _pImmediateContext;
 	IDXGISwapChain*         _pSwapChain;
 	ID3D11RenderTargetView* _pRenderTargetView;
-	ID3D11VertexShader*     _pVertexShader;
-	ID3D11PixelShader*      _pPixelShader;
+	ID3D11VertexShader*     _pNormalVertexShader;
+	ID3D11PixelShader*      _pNormalPixelShader;
+	ID3D11VertexShader*     _pParralaxVertexShader;
+	ID3D11PixelShader*      _pParralaxPixelShader;
 	ID3D11InputLayout*      _pVertexLayout;
 
 	ID3D11Buffer*           _pVertexBuffer;

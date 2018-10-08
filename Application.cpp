@@ -65,8 +65,8 @@ Application::Application()
 	_pImmediateContext = nullptr;
 	_pSwapChain = nullptr;
 	_pRenderTargetView = nullptr;
-	_pVertexShader = nullptr;
-	_pPixelShader = nullptr;
+	_pNormalVertexShader = nullptr;
+	_pNormalPixelShader = nullptr;
 	_pVertexLayout = nullptr;
 	_pVertexBuffer = nullptr;
 	_pIndexBuffer = nullptr;
@@ -189,9 +189,9 @@ HRESULT Application::InitShadersAndInputLayout()
 {
 	HRESULT hr;
 
-    // Compile the vertex shader
+    // Compile the normal map vertex shader
     ID3DBlob* pVSBlob = nullptr;
-    hr = CompileShaderFromFile(L"DX11 Framework.fx", "VS", "vs_4_0", &pVSBlob);
+    hr = CompileShaderFromFile(L"DX11 Framework.fx", "NormalVS", "vs_4_0", &pVSBlob);
 
     if (FAILED(hr))
     {
@@ -200,8 +200,8 @@ HRESULT Application::InitShadersAndInputLayout()
         return hr;
     }
 
-	// Create the vertex shader
-	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pVertexShader);
+	// Create the normal map vertex shader
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pNormalVertexShader);
 
 	if (FAILED(hr))
 	{	
@@ -209,9 +209,9 @@ HRESULT Application::InitShadersAndInputLayout()
         return hr;
 	}
 
-	// Compile the pixel shader
+	// Compile the normal map pixel shader
 	ID3DBlob* pPSBlob = nullptr;
-    hr = CompileShaderFromFile(L"DX11 Framework.fx", "PS", "ps_4_0", &pPSBlob);
+    hr = CompileShaderFromFile(L"DX11 Framework.fx", "NormalPS", "ps_4_0", &pPSBlob);
 
     if (FAILED(hr))
     {
@@ -221,8 +221,41 @@ HRESULT Application::InitShadersAndInputLayout()
     }
 
 	// Create the pixel shader
-	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pPixelShader);
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pNormalPixelShader);
 	pPSBlob->Release();
+
+	//Compile the Parralax map vertex shader
+	hr = CompileShaderFromFile(L"DX11 Framework.fx", "ParralaxVS", "vs_4_0", &pVSBlob);
+
+	if (FAILED(hr))
+	{
+		MessageBox(nullptr,
+			L"The FX file cannot compile parralax vertex shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
+	}
+
+	// Create the Parralax map vertex shader
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pParralaxVertexShader);
+
+	//Compile the Parralax map pixel shader
+	hr = CompileShaderFromFile(L"DX11 Framework.fx", "ParralaxPS", "ps_4_0", &pPSBlob);
+
+	if (FAILED(hr))
+	{
+		MessageBox(nullptr,
+			L"The FX file cannot compile parralax pixel shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
+	}
+
+	// Create the pixel shader
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pParralaxPixelShader);
+
+	if (FAILED(hr))
+	{
+		MessageBox(nullptr,
+			L"The FX file cannot compile parralax vertex shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
+	}
 
     if (FAILED(hr))
         return hr;
@@ -651,8 +684,8 @@ void Application::Cleanup()
 	if (_pPlaneIndexBuffer) _pPlaneIndexBuffer->Release();
 
     if (_pVertexLayout) _pVertexLayout->Release();
-    if (_pVertexShader) _pVertexShader->Release();
-    if (_pPixelShader) _pPixelShader->Release();
+    if (_pNormalVertexShader) _pNormalVertexShader->Release();
+    if (_pNormalPixelShader) _pNormalPixelShader->Release();
     if (_pRenderTargetView) _pRenderTargetView->Release();
     if (_pSwapChain) _pSwapChain->Release();
     if (_pImmediateContext) _pImmediateContext->Release();
@@ -773,8 +806,8 @@ void Application::Draw()
 
 	_pImmediateContext->IASetInputLayout(_pVertexLayout);
 
-	_pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-	_pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
+	//_pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
+	//_pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
 
 	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
@@ -809,13 +842,23 @@ void Application::Draw()
 		cb.World = XMMatrixTranspose(gameObject->GetTransform()->GetWorldMatrix());
 
 		// Set texture
-		if (gameObject->HasTexture(TX_DIFFUSE))
+		if (gameObject->HasTexture(TX_NORMAL))//Use NormalMap Shader
 		{
+			_pImmediateContext->VSSetShader(_pNormalVertexShader, nullptr, 0);
+			_pImmediateContext->PSSetShader(_pNormalPixelShader, nullptr, 0);
+
 			ID3D11ShaderResourceView * textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
 			_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
 			textureRV = gameObject->GetTextureRV(TX_NORMAL);
 			_pImmediateContext->PSSetShaderResources(1, 1, &textureRV);
 			cb.HasTexture = 1.0f;
+		}
+		else if (gameObject->HasTexture(TX_HEIGHTMAP))
+		{
+			_pImmediateContext->VSSetShader(_pParralaxVertexShader, nullptr, 0);
+			_pImmediateContext->PSSetShader(_pParralaxPixelShader, nullptr, 0);
+
+
 		}
 		else
 		{

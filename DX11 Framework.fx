@@ -46,7 +46,7 @@ struct VS_INPUT
 {
 	float4 PosL : POSITION;
 	float3 NormL : NORMAL;
-	float3 tangent : TANGENT;
+	float3 Tangent : TANGENT;
 	float2 Tex : TEXCOORD0;
 };
 
@@ -61,9 +61,9 @@ struct VS_OUTPUT
 };
 
 //--------------------------------------------------------------------------------------
-// Vertex Shader
+// Normal Map Vertex Shader
 //--------------------------------------------------------------------------------------
-VS_OUTPUT VS(VS_INPUT input)
+VS_OUTPUT NormalVS(VS_INPUT input)
 {
     VS_OUTPUT output = (VS_OUTPUT)0;
 
@@ -77,7 +77,7 @@ VS_OUTPUT VS(VS_INPUT input)
 	float3 normalW = mul(float4(input.NormL, 0.0f), World).xyz;
 	output.NormW = normalize(normalW);
 
-	float4 tangentW = mul(float4(input.tangent, 0.0f), World);
+	float4 tangentW = mul(float4(input.Tangent, 0.0f), World);
 	output.TangentW = normalize(tangentW);
 
     return output;
@@ -102,9 +102,9 @@ float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, floa
 }
 
 //--------------------------------------------------------------------------------------
-// Pixel Shader
+// Normal Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 PS(VS_OUTPUT input) : SV_Target
+float4 NormalPS(VS_OUTPUT input) : SV_Target
 {
 	float3 normalW = normalize(input.NormW);
 
@@ -162,3 +162,83 @@ float4 PS(VS_OUTPUT input) : SV_Target
 	return finalColour;
 }
 
+//--------------------------------------------------------------------------------------
+// Parralax Vertex Shader
+//--------------------------------------------------------------------------------------
+VS_OUTPUT ParralaxVS(VS_INPUT input)
+{
+	VS_OUTPUT output = (VS_OUTPUT)0;
+
+	float4 posW = mul(input.PosL, World);
+	output.PosW = posW.xyz;
+
+	output.PosH = mul(posW, View);
+	output.PosH = mul(output.PosH, Projection);
+	output.Tex = input.Tex;
+
+	float3 normalW = mul(float4(input.NormL, 0.0f), World).xyz;
+	output.NormW = normalize(normalW);
+
+	return output;
+}
+
+//--------------------------------------------------------------------------------------
+// Parralax Pixel Shader
+//--------------------------------------------------------------------------------------
+float4 ParralaxPS(VS_OUTPUT input) : SV_Target
+{
+	float3 normalW = normalize(input.NormW);
+
+	float3 toEye = normalize(EyePosW - input.PosW);
+
+	// Get texture data from file
+	float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
+	float4 bumpMap = txNormal.Sample(samLinear, input.Tex);
+
+	//Expand the range of the normal value from (0, +1) to (-1, +1)
+	bumpMap = (bumpMap * 2.0f) - 1.0f;
+	float3 bumpedNormalW = NormalSampleToWorldSpace(bumpMap.xyz, input.NormW, input.TangentW);
+
+	float3 ambient = float3(0.0f, 0.0f, 0.0f);
+	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
+	float3 specular = float3(0.0f, 0.0f, 0.0f);
+
+	float3 lightLecNorm = normalize(light.LightVecW);
+	// Compute Colour
+
+	// Compute the reflection vector.
+	float3 r = reflect(-lightLecNorm, bumpedNormalW);
+
+	// Determine how much specular light makes it into the eye.
+	float specularAmount = pow(max(dot(r, toEye), 0.0f), light.SpecularPower);
+
+	// Determine the diffuse light intensity that strikes the vertex.
+	float diffuseAmount = max(dot(lightLecNorm, bumpedNormalW), 0.0f);
+
+	// Only display specular when there is diffuse
+	if (diffuseAmount <= 0.0f)
+	{
+		specularAmount = 0.0f;
+	}
+
+	// Compute the ambient, diffuse, and specular terms separately.
+	specular += specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb;
+	diffuse += diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb;
+	ambient += (surface.AmbientMtrl * light.AmbientLight).rgb;
+
+	// Sum all the terms together and copy over the diffuse alpha.
+	float4 finalColour;
+
+	if (HasTexture == 1.0f)
+	{
+		finalColour.rgb = (textureColour.rgb * (ambient + diffuse)) + specular;
+	}
+	else
+	{
+		finalColour.rgb = ambient + diffuse + specular;
+	}
+
+	finalColour.a = surface.DiffuseMtrl.a;
+
+	return finalColour;
+}
