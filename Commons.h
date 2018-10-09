@@ -59,6 +59,10 @@ struct ConstantBuffer
 
 	XMFLOAT3 EyePosW;
 	float HasTexture;
+
+	float HeightMapScale;
+	int MaxSamples;
+	int MinSamples;
 };
 
 struct IndexedModel

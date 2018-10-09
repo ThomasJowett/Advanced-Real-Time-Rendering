@@ -108,6 +108,10 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	ID3D11ShaderResourceView * _pNormalSpaceManTextureRV;
 	ID3D11ShaderResourceView *_pDiffuseSpaceManTextureRV;
 
+	ID3D11ShaderResourceView * _pNormalCrateTextureRV;
+	ID3D11ShaderResourceView *_pDiffuseCrateTextureRV;
+	ID3D11ShaderResourceView *_pHeightCrateTextureRV;
+
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Diffuse.dds", nullptr, &_pDiffuseSpaceManTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Diffuse.dds", nullptr, &_pDiffuseGroundTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Normal.dds", nullptr, &_pNormalSpaceManTextureRV);
@@ -117,6 +121,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\conenormal.dds", nullptr, &_pNormalGroundTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_Diffuse.dds", nullptr, &_pDiffuseStoneTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_Normal.dds", nullptr, &_pNormalStoneTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_NRM.dds", nullptr, &_pNormalCrateTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_COLOR.dds", nullptr, &_pDiffuseCrateTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_DISP.dds", nullptr, &_pHeightCrateTextureRV);
 
     // Setup Camera
 	XMFLOAT3 eye = XMFLOAT3(0.0f, 2.0f, -1.0f);
@@ -163,9 +170,11 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	transform = new Transform(Vector3D(0.0f, 1.0f, 0.0f), Quaternion(1, 0, 0, 0), Vector3D(1.0f, 1.0f, 1.0f));
 
-	gameObject = new GameObject("Sphere", transform, sphereGeometry, shinyMaterial);
-	gameObject->SetTextureRV(_pDiffuseEarthTextureRV, TX_DIFFUSE);
-	gameObject->SetTextureRV(_pNormalEarthTextureRV, TX_NORMAL);
+	gameObject = new GameObject("Crate", transform, cubeGeometry, shinyMaterial);
+	gameObject->SetTextureRV(_pDiffuseCrateTextureRV, TX_DIFFUSE);
+	gameObject->SetTextureRV(_pNormalCrateTextureRV, TX_NORMAL);
+	gameObject->SetTextureRV(_pHeightCrateTextureRV, TX_HEIGHTMAP);
+	gameObject->SetShaderToUse(TX_HEIGHTMAP);
 
 	_gameObjects.push_back(gameObject);
 
@@ -196,7 +205,7 @@ HRESULT Application::InitShadersAndInputLayout()
     if (FAILED(hr))
     {
         MessageBox(nullptr,
-                   L"The FX file cannot compile vertex shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+                   L"The FX file cannot compile normal vertex shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
         return hr;
     }
 
@@ -216,7 +225,7 @@ HRESULT Application::InitShadersAndInputLayout()
     if (FAILED(hr))
     {
         MessageBox(nullptr,
-                   L"The FX file cannot compile pixel shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+                   L"The FX file cannot compile normal pixel shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
         return hr;
     }
 
@@ -827,6 +836,10 @@ void Application::Draw()
 	cb.light = basicLight;
 	cb.EyePosW = _camera->GetPosition();
 
+	cb.HeightMapScale = 0.1f;
+	cb.MaxSamples = 1000;
+	cb.MinSamples = 1;
+
 	// Render all scene objects
 	for (auto gameObject : _gameObjects)
 	{
@@ -842,23 +855,29 @@ void Application::Draw()
 		cb.World = XMMatrixTranspose(gameObject->GetTransform()->GetWorldMatrix());
 
 		// Set texture
-		if (gameObject->HasTexture(TX_NORMAL))//Use NormalMap Shader
+		if (gameObject->GetShaderToUse() == TX_NORMAL)//Use NormalMap Shader
 		{
 			_pImmediateContext->VSSetShader(_pNormalVertexShader, nullptr, 0);
 			_pImmediateContext->PSSetShader(_pNormalPixelShader, nullptr, 0);
-
+		
 			ID3D11ShaderResourceView * textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
 			_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
 			textureRV = gameObject->GetTextureRV(TX_NORMAL);
 			_pImmediateContext->PSSetShaderResources(1, 1, &textureRV);
 			cb.HasTexture = 1.0f;
 		}
-		else if (gameObject->HasTexture(TX_HEIGHTMAP))
+		else if (gameObject->GetShaderToUse() == TX_HEIGHTMAP)
 		{
 			_pImmediateContext->VSSetShader(_pParralaxVertexShader, nullptr, 0);
 			_pImmediateContext->PSSetShader(_pParralaxPixelShader, nullptr, 0);
 
-
+			ID3D11ShaderResourceView * textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
+			_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
+			textureRV = gameObject->GetTextureRV(TX_NORMAL);
+			_pImmediateContext->PSSetShaderResources(1, 1, &textureRV);
+			textureRV = gameObject->GetTextureRV(TX_HEIGHTMAP);
+			_pImmediateContext->PSSetShaderResources(2, 1, &textureRV);
+			cb.HasTexture = 1.0f;
 		}
 		else
 		{

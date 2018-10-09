@@ -45,7 +45,10 @@ public:
 
 	void SetTextureRV(ID3D11ShaderResourceView * textureRV, TextureID ID) { _textureRV[ID] = textureRV; }
 	ID3D11ShaderResourceView * GetTextureRV(TextureID ID) const { return _textureRV[ID]; }
-	bool HasTexture(TextureID ID) const { return _textureRV[ID] ? true : false; }
+	bool HasTexture(TextureID ID) const { return _textureRV[ID] != nullptr ? true : false; }
+
+	TextureID GetShaderToUse() const { return _shaderToUse; }
+	void SetShaderToUse(TextureID shader) { _shaderToUse = shader; }
 
 	void SetParent(GameObject * parent) { _parent = parent; }
 
@@ -60,6 +63,8 @@ private:
 
 	Mesh _geometry;
 	Material _material;
+
+	TextureID _shaderToUse = TX_NORMAL;
 
 	ID3D11ShaderResourceView * _textureRV[TX_NUMBER_OF_TEXTURES];
 

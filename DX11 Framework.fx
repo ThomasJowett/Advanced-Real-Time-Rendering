@@ -40,18 +40,22 @@ cbuffer ConstantBuffer : register( b0 )
 
 	float3 EyePosW;
 	float HasTexture;
+
+	float HeightMapScale;
+	int MaxSamples;
+	int MinSamples;
 }
 
 struct VS_INPUT
 {
 	float4 PosL : POSITION;
 	float3 NormL : NORMAL;
-	float3 Tangent : TANGENT;
+	float3 TangentL : TANGENT;
 	float2 Tex : TEXCOORD0;
 };
 
 //--------------------------------------------------------------------------------------
-struct VS_OUTPUT
+struct VS_OUTPUT_NORMAL
 {
     float4 PosH : SV_POSITION;
 	float3 NormW : NORMAL;
@@ -61,23 +65,37 @@ struct VS_OUTPUT
 };
 
 //--------------------------------------------------------------------------------------
+struct VS_OUTPUT_PARRALAX
+{
+	float4 PosH : SV_POSITION;
+	float3 NormW : NORMAL;
+	float4 TangentW : TANGENT;
+	float4 Binormal : BINORMAL;
+	float3 PosW : POSITION;
+	float3 LightVecT : POSITION1;
+	float3 EyeVecT : POSITION2;
+	float2 Tex : TEXCOORD0;
+};
+
+//--------------------------------------------------------------------------------------
 // Normal Map Vertex Shader
 //--------------------------------------------------------------------------------------
-VS_OUTPUT NormalVS(VS_INPUT input)
+VS_OUTPUT_NORMAL NormalVS(VS_INPUT input)
 {
-    VS_OUTPUT output = (VS_OUTPUT)0;
+    VS_OUTPUT_NORMAL output = (VS_OUTPUT_NORMAL)0;
 
 	float4 posW = mul(input.PosL, World);
 	output.PosW = posW.xyz;
 
 	output.PosH = mul(posW, View);
 	output.PosH = mul(output.PosH, Projection);
+
 	output.Tex = input.Tex;
 
 	float3 normalW = mul(float4(input.NormL, 0.0f), World).xyz;
 	output.NormW = normalize(normalW);
 
-	float4 tangentW = mul(float4(input.Tangent, 0.0f), World);
+	float4 tangentW = mul(float4(input.TangentL, 0.0f), World);
 	output.TangentW = normalize(tangentW);
 
     return output;
@@ -104,7 +122,7 @@ float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, floa
 //--------------------------------------------------------------------------------------
 // Normal Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 NormalPS(VS_OUTPUT input) : SV_Target
+float4 NormalPS(VS_OUTPUT_NORMAL input) : SV_Target
 {
 	float3 normalW = normalize(input.NormW);
 
@@ -165,19 +183,34 @@ float4 NormalPS(VS_OUTPUT input) : SV_Target
 //--------------------------------------------------------------------------------------
 // Parralax Vertex Shader
 //--------------------------------------------------------------------------------------
-VS_OUTPUT ParralaxVS(VS_INPUT input)
+VS_OUTPUT_PARRALAX ParralaxVS(VS_INPUT input)
 {
-	VS_OUTPUT output = (VS_OUTPUT)0;
+	VS_OUTPUT_PARRALAX output = (VS_OUTPUT_PARRALAX)0;
 
 	float4 posW = mul(input.PosL, World);
 	output.PosW = posW.xyz;
-
+	
 	output.PosH = mul(posW, View);
 	output.PosH = mul(output.PosH, Projection);
+	
+	float3x3 tbnMatrix;
+	tbnMatrix[0] = normalize(mul(float4(input.TangentL, 0.0f), World).xyz);
+	tbnMatrix[1] = normalize(mul(float4(cross(input.NormL, input.TangentL), 0.0f), World).xyz);
+	tbnMatrix[2] = normalize(mul(float4(input.NormL, 0.0f), World).xyz);
+
 	output.Tex = input.Tex;
 
-	float3 normalW = mul(float4(input.NormL, 0.0f), World).xyz;
-	output.NormW = normalize(normalW);
+	output.TangentW = float4(tbnMatrix[0], 0.0f);
+	output.Binormal = float4(tbnMatrix[1], 0.0f);
+	output.NormW = tbnMatrix[2];
+	
+	float3 EyeVecW = (EyePosW - posW).xyz;
+	
+	output.LightVecT = normalize(mul(tbnMatrix, light.LightVecW));
+	output.EyeVecT = normalize(mul(tbnMatrix, EyeVecW));
+	
+	//float3 normalW = mul(float4(input.NormL, 0.0f), World).xyz;
+	//output.NormW = normalize(normalW);
 
 	return output;
 }
@@ -185,59 +218,108 @@ VS_OUTPUT ParralaxVS(VS_INPUT input)
 //--------------------------------------------------------------------------------------
 // Parralax Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 ParralaxPS(VS_OUTPUT input) : SV_Target
+float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 {
+
+	float parralaxLimit = -length(input.EyeVecT.xy) / input.EyeVecT.z;
+	parralaxLimit *= HeightMapScale;
+	
+	float2 offsetDir = normalize(input.EyeVecT.xy);
+	
 	float3 normalW = normalize(input.NormW);
-
-	float3 toEye = normalize(EyePosW - input.PosW);
-
+	//float3 toEye = normalize(EyePosW - input.PosW);
+	float3 toEye = normalize(input.EyeVecT);
+	
+	int NumSamples = (int)lerp(MaxSamples, MinSamples, dot(toEye, normalW));
+	
+	float StepSize = 1.0 / (float)NumSamples;
+	
+	float2 dx = ddx(input.Tex);
+	float2 dy = ddy(input.Tex);
+	
+	float CurrRayHeight = 1.0;
+	float2 CurrOffset = float2(0, 0);
+	float2 LastOffset = float2(0, 0);
+	
+	float LastSampledHeight = 1;
+	float CurrSampledHeight = 1;
+	int CurrSample = 0;
+	
+	while (CurrSample < NumSamples)
+	{
+		CurrSampledHeight = txHeight.SampleGrad(samLinear, input.Tex + CurrOffset, dx, dy).r;
+		if (CurrSampledHeight > CurrRayHeight)
+		{
+			float delta1 = CurrSampledHeight - CurrRayHeight;
+			float delta2 = (CurrRayHeight + StepSize) - LastSampledHeight;
+			
+			float ratio = delta1 / (delta1 + delta2);
+			
+			CurrOffset = (ratio)* LastOffset + (1.0 - ratio) * CurrOffset;
+			CurrSample = NumSamples + 1;
+		}
+		else
+		{
+			CurrSample++;
+			
+			CurrRayHeight -= StepSize;
+			
+			LastOffset = CurrOffset;
+			CurrOffset += StepSize * parralaxLimit;
+			
+			LastSampledHeight = CurrSampledHeight;
+		}
+	}
+	
+	float2 FinalCoords = input.Tex + CurrOffset;
+	
 	// Get texture data from file
-	float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
-	float4 bumpMap = txNormal.Sample(samLinear, input.Tex);
-
+	float4 textureColour = txDiffuse.Sample(samLinear, FinalCoords);
+	float4 bumpMap = txNormal.Sample(samLinear, FinalCoords);
+	
+	//float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
+	//float4 bumpMap = txNormal.Sample(samLinear, input.Tex);
+	
 	//Expand the range of the normal value from (0, +1) to (-1, +1)
 	bumpMap = (bumpMap * 2.0f) - 1.0f;
 	float3 bumpedNormalW = NormalSampleToWorldSpace(bumpMap.xyz, input.NormW, input.TangentW);
-
+	
 	float3 ambient = float3(0.0f, 0.0f, 0.0f);
 	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
 	float3 specular = float3(0.0f, 0.0f, 0.0f);
-
+	
 	float3 lightLecNorm = normalize(light.LightVecW);
 	// Compute Colour
-
+	
 	// Compute the reflection vector.
 	float3 r = reflect(-lightLecNorm, bumpedNormalW);
-
+	
 	// Determine how much specular light makes it into the eye.
 	float specularAmount = pow(max(dot(r, toEye), 0.0f), light.SpecularPower);
-
+	
 	// Determine the diffuse light intensity that strikes the vertex.
 	float diffuseAmount = max(dot(lightLecNorm, bumpedNormalW), 0.0f);
-
+	
 	// Only display specular when there is diffuse
 	if (diffuseAmount <= 0.0f)
 	{
 		specularAmount = 0.0f;
 	}
-
+	
 	// Compute the ambient, diffuse, and specular terms separately.
 	specular += specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb;
 	diffuse += diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb;
 	ambient += (surface.AmbientMtrl * light.AmbientLight).rgb;
-
+	
+	
+	ambient = textureColour.rgb * 0.1f;
+	//diffuse = textureColour.rgb * max(0.0f, dat(light.LightVecW, bumpNormal.xyz))*0.5f;
+	diffuse = textureColour.rgb;
 	// Sum all the terms together and copy over the diffuse alpha.
 	float4 finalColour;
-
-	if (HasTexture == 1.0f)
-	{
-		finalColour.rgb = (textureColour.rgb * (ambient + diffuse)) + specular;
-	}
-	else
-	{
-		finalColour.rgb = ambient + diffuse + specular;
-	}
-
+	
+	finalColour.rgb = ambient + diffuse + specular;
+	
 	finalColour.a = surface.DiffuseMtrl.a;
 
 	return finalColour;
