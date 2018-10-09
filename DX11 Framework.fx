@@ -277,6 +277,7 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 	float4 textureColour = txDiffuse.Sample(samLinear, FinalCoords);
 	float4 bumpMap = txNormal.Sample(samLinear, FinalCoords);
 	
+	
 	//float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
 	//float4 bumpMap = txNormal.Sample(samLinear, input.Tex);
 	
@@ -311,14 +312,10 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 	diffuse += diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb;
 	ambient += (surface.AmbientMtrl * light.AmbientLight).rgb;
 	
-	
-	ambient = textureColour.rgb * 0.1f;
-	//diffuse = textureColour.rgb * max(0.0f, dat(light.LightVecW, bumpNormal.xyz))*0.5f;
-	diffuse = textureColour.rgb;
 	// Sum all the terms together and copy over the diffuse alpha.
 	float4 finalColour;
 	
-	finalColour.rgb = ambient + diffuse + specular;
+	finalColour.rgb = (textureColour.rgb * (ambient + diffuse)) + specular;
 	
 	finalColour.a = surface.DiffuseMtrl.a;
 
