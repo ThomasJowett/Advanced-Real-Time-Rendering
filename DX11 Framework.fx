@@ -205,7 +205,9 @@ VS_OUTPUT_PARRALAX ParralaxVS(VS_INPUT input)
 	output.NormW = tbnMatrix[2];
 	
 	float3 EyeVecW = (EyePosW - posW).xyz;
-	
+
+	EyeVecW = normalize(EyeVecW);
+
 	output.LightVecT = normalize(mul(tbnMatrix, light.LightVecW));
 	output.EyeVecT = normalize(mul(tbnMatrix, EyeVecW));
 	
@@ -283,23 +285,22 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 	
 	//Expand the range of the normal value from (0, +1) to (-1, +1)
 	bumpMap = (bumpMap * 2.0f) - 1.0f;
-	float3 bumpedNormalW = NormalSampleToWorldSpace(bumpMap.xyz, input.NormW, input.TangentW);
 	
 	float3 ambient = float3(0.0f, 0.0f, 0.0f);
 	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
 	float3 specular = float3(0.0f, 0.0f, 0.0f);
 	
-	float3 lightLecNorm = normalize(light.LightVecW);
+	float lightLecNorm = normalize(input.LightVecT);
 	// Compute Colour
 	
 	// Compute the reflection vector.
-	float3 r = reflect(-lightLecNorm, bumpedNormalW);
+	float3 r = reflect(-lightLecNorm, bumpMap.xyz);
 	
 	// Determine how much specular light makes it into the eye.
 	float specularAmount = pow(max(dot(r, toEye), 0.0f), light.SpecularPower);
 	
 	// Determine the diffuse light intensity that strikes the vertex.
-	float diffuseAmount = max(dot(lightLecNorm, bumpedNormalW), 0.0f);
+	float diffuseAmount = max(dot(lightLecNorm, bumpMap.xyz), 0.0f);
 	
 	// Only display specular when there is diffuse
 	if (diffuseAmount <= 0.0f)

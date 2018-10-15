@@ -866,7 +866,7 @@ void Application::Draw()
 			_pImmediateContext->PSSetShaderResources(1, 1, &textureRV);
 			cb.HasTexture = 1.0f;
 		}
-		else if (gameObject->GetShaderToUse() == TX_HEIGHTMAP)
+		else if (gameObject->GetShaderToUse() == TX_HEIGHTMAP)//Use Parralax Shader
 		{
 			_pImmediateContext->VSSetShader(_pParralaxVertexShader, nullptr, 0);
 			_pImmediateContext->PSSetShader(_pParralaxPixelShader, nullptr, 0);
