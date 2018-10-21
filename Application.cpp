@@ -112,6 +112,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	ID3D11ShaderResourceView *_pDiffuseCrateTextureRV;
 	ID3D11ShaderResourceView *_pHeightCrateTextureRV;
 
+	ID3D11ShaderResourceView *_pHeightGroundTextureRV;
+
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Diffuse.dds", nullptr, &_pDiffuseSpaceManTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Diffuse.dds", nullptr, &_pDiffuseGroundTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Normal.dds", nullptr, &_pNormalSpaceManTextureRV);
@@ -123,7 +125,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_Normal.dds", nullptr, &_pNormalStoneTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_NRM.dds", nullptr, &_pNormalCrateTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_COLOR.dds", nullptr, &_pDiffuseCrateTextureRV);
-	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_DISP.dds", nullptr, &_pHeightCrateTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_HEIGHT.dds", nullptr, &_pHeightCrateTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Height.dds", nullptr, &_pHeightGroundTextureRV);
 
     // Setup Camera
 	XMFLOAT3 eye = XMFLOAT3(0.0f, 2.0f, -1.0f);
@@ -137,7 +140,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	basicLight.DiffuseLight = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	basicLight.SpecularLight = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
 	basicLight.SpecularPower = 20.0f;
-	basicLight.LightVecW = XMFLOAT3(1.0f, 1.0f, -1.0f);
+	basicLight.LightPosW = XMFLOAT3(10.0f, 10.0f, -10.0f);
 
 	Mesh cubeGeometry(GeometryGenerator::CreateCube(1.0f, 1.0f,1.0f),_pd3dDevice);
 
@@ -165,6 +168,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	gameObject->SetTextureRV(_pDiffuseGroundTextureRV, TX_DIFFUSE);
 	gameObject->SetTextureRV(_pNormalGroundTextureRV, TX_NORMAL);
+	gameObject->SetTextureRV(_pHeightGroundTextureRV, TX_HEIGHTMAP);
+	gameObject->SetShaderToUse(TX_HEIGHTMAP);
 
 	_gameObjects.push_back(gameObject);
 
@@ -174,7 +179,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	gameObject->SetTextureRV(_pDiffuseCrateTextureRV, TX_DIFFUSE);
 	gameObject->SetTextureRV(_pNormalCrateTextureRV, TX_NORMAL);
 	gameObject->SetTextureRV(_pHeightCrateTextureRV, TX_HEIGHTMAP);
-	gameObject->SetShaderToUse(TX_HEIGHTMAP);
+	//gameObject->SetShaderToUse(TX_HEIGHTMAP);
 
 	_gameObjects.push_back(gameObject);
 
@@ -793,9 +798,9 @@ void Application::Update(float deltaTime)
 		gameObject->Update(deltaTime);
 	}
 
-	counter+= deltaTime*10;
+	counter+= deltaTime;
 
-	//basicLight.LightVecW.x = sin(counter);
+	//basicLight.LightPosW.x = sin(counter)*10;
 }
 
 void Application::Draw()
@@ -836,7 +841,7 @@ void Application::Draw()
 	cb.light = basicLight;
 	cb.EyePosW = _camera->GetPosition();
 
-	cb.HeightMapScale = 0.1f;
+	cb.HeightMapScale = 0.05f;
 	cb.MaxSamples = 1000;
 	cb.MinSamples = 1;
 

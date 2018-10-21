@@ -44,7 +44,7 @@ struct Light
 	XMFLOAT4 SpecularLight;
 
 	float SpecularPower;
-	XMFLOAT3 LightVecW;
+	XMFLOAT3 LightPosW;
 };
 
 struct ConstantBuffer

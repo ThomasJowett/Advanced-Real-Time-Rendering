@@ -26,7 +26,7 @@ struct Light
 	float4 SpecularLight;
 
 	float SpecularPower;
-	float3 LightVecW;
+	float3 LightPosW;
 };
 
 cbuffer ConstantBuffer : register( b0 )
@@ -72,8 +72,8 @@ struct VS_OUTPUT_PARRALAX
 	float4 TangentW : TANGENT;
 	float4 Binormal : BINORMAL;
 	float3 PosW : POSITION;
-	float3 LightVecT : POSITION1;
-	float3 EyeVecT : POSITION2;
+	float3 LightVecT : TEXCOORD1;
+	float3 EyeVecT : TEXCOORD2;
 	float2 Tex : TEXCOORD0;
 };
 
@@ -140,7 +140,8 @@ float4 NormalPS(VS_OUTPUT_NORMAL input) : SV_Target
 	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
 	float3 specular = float3(0.0f, 0.0f, 0.0f);
 
-	float3 lightLecNorm = normalize(light.LightVecW);
+
+	float3 lightLecNorm = normalize(light.LightPosW - input.PosW);
 	// Compute Colour
 
 	// Compute the reflection vector.
@@ -204,11 +205,13 @@ VS_OUTPUT_PARRALAX ParralaxVS(VS_INPUT input)
 	output.Binormal = float4(tbnMatrix[1], 0.0f);
 	output.NormW = tbnMatrix[2];
 	
-	float3 EyeVecW = (EyePosW - posW).xyz;
+	float3 EyeVecW = EyePosW - posW.xyz;
 
 	EyeVecW = normalize(EyeVecW);
 
-	output.LightVecT = normalize(mul(tbnMatrix, light.LightVecW));
+	float3 LightVecW = light.LightPosW - posW.xyz;
+
+	output.LightVecT = normalize(mul(tbnMatrix, LightVecW));
 	output.EyeVecT = normalize(mul(tbnMatrix, EyeVecW));
 	
 	//float3 normalW = mul(float4(input.NormL, 0.0f), World).xyz;
@@ -222,11 +225,11 @@ VS_OUTPUT_PARRALAX ParralaxVS(VS_INPUT input)
 //--------------------------------------------------------------------------------------
 float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 {
-
 	float parralaxLimit = -length(input.EyeVecT.xy) / input.EyeVecT.z;
 	parralaxLimit *= HeightMapScale;
 	
 	float2 offsetDir = normalize(input.EyeVecT.xy);
+	float2 maxOffset = offsetDir * parralaxLimit;
 	
 	float3 normalW = normalize(input.NormW);
 	//float3 toEye = normalize(EyePosW - input.PosW);
@@ -267,7 +270,7 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 			CurrRayHeight -= StepSize;
 			
 			LastOffset = CurrOffset;
-			CurrOffset += StepSize * parralaxLimit;
+			CurrOffset += StepSize * maxOffset;
 			
 			LastSampledHeight = CurrSampledHeight;
 		}
@@ -290,6 +293,7 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
 	float3 specular = float3(0.0f, 0.0f, 0.0f);
 	
+	//float3 lightLecNorm = normalize(light.LightPosW - input.PosW);
 	float lightLecNorm = normalize(input.LightVecT);
 	// Compute Colour
 	
