@@ -69,8 +69,6 @@ struct VS_OUTPUT_PARRALAX
 {
 	float4 PosH : SV_POSITION;
 	float3 NormW : NORMAL;
-	float4 TangentW : TANGENT;
-	float4 Binormal : BINORMAL;
 	float3 PosW : POSITION;
 	float3 LightVecT : TEXCOORD1;
 	float3 EyeVecT : TEXCOORD2;
@@ -201,8 +199,6 @@ VS_OUTPUT_PARRALAX ParralaxVS(VS_INPUT input)
 
 	output.Tex = input.Tex;
 
-	output.TangentW = float4(tbnMatrix[0], 0.0f);
-	output.Binormal = float4(tbnMatrix[1], 0.0f);
 	output.NormW = tbnMatrix[2];
 	
 	float3 EyeVecW = EyePosW - posW.xyz;
@@ -232,22 +228,22 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 	float2 maxOffset = offsetDir * parralaxLimit;
 	
 	float3 normalW = normalize(input.NormW);
-	//float3 toEye = normalize(EyePosW - input.PosW);
+	float3 toEyeW = normalize(EyePosW - input.PosW);
 	float3 toEye = normalize(input.EyeVecT);
-	
-	int NumSamples = (int)lerp(MaxSamples, MinSamples, dot(toEye, normalW));
-	
-	float StepSize = 1.0 / (float)NumSamples;
+
+	int NumSamples = (int)lerp(MaxSamples, MinSamples, dot(toEyeW, normalW));
+
+	float StepSize = 1.0f / (float)NumSamples;
 	
 	float2 dx = ddx(input.Tex);
 	float2 dy = ddy(input.Tex);
 	
-	float CurrRayHeight = 1.0;
-	float2 CurrOffset = float2(0, 0);
-	float2 LastOffset = float2(0, 0);
+	float CurrRayHeight = 1.0f;
+	float2 CurrOffset = float2(0.0f, 0.0f);
+	float2 LastOffset = float2(0.0f, 0.0f);
 	
-	float LastSampledHeight = 1;
-	float CurrSampledHeight = 1;
+	float LastSampledHeight = 1.0f;
+	float CurrSampledHeight = 1.0f;
 	int CurrSample = 0;
 	
 	while (CurrSample < NumSamples)
@@ -260,7 +256,7 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 			
 			float ratio = delta1 / (delta1 + delta2);
 			
-			CurrOffset = (ratio)* LastOffset + (1.0 - ratio) * CurrOffset;
+			CurrOffset = (ratio)* LastOffset + (1.0f - ratio) * CurrOffset;
 			CurrSample = NumSamples + 1;
 		}
 		else
@@ -277,7 +273,7 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 	}
 	
 	float2 FinalCoords = input.Tex + CurrOffset;
-	
+
 	// Get texture data from file
 	float4 textureColour = txDiffuse.Sample(samLinear, FinalCoords);
 	float4 bumpMap = txNormal.Sample(samLinear, FinalCoords);
@@ -294,9 +290,9 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 	float3 specular = float3(0.0f, 0.0f, 0.0f);
 	
 	//float3 lightLecNorm = normalize(light.LightPosW - input.PosW);
-	float lightLecNorm = normalize(input.LightVecT);
+	float3 lightLecNorm = normalize(input.LightVecT);
 	// Compute Colour
-	
+
 	// Compute the reflection vector.
 	float3 r = reflect(-lightLecNorm, bumpMap.xyz);
 	

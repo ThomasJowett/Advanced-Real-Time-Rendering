@@ -144,7 +144,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	Mesh cubeGeometry(GeometryGenerator::CreateCube(1.0f, 1.0f,1.0f),_pd3dDevice);
 
-	Mesh planeGeometry(GeometryGenerator::CreateGrid(25.0f, 25.0f, 4, 4, 4, 4), _pd3dDevice);
+	Mesh planeGeometry(GeometryGenerator::CreateGrid(25.0f, 25.0f, 2, 2, 4, 4), _pd3dDevice);
 
 	Mesh sphereGeometry(GeometryGenerator::CreateSphere(1.0f, 20.0f, 20.0f), _pd3dDevice);
 
@@ -179,7 +179,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	gameObject->SetTextureRV(_pDiffuseCrateTextureRV, TX_DIFFUSE);
 	gameObject->SetTextureRV(_pNormalCrateTextureRV, TX_NORMAL);
 	gameObject->SetTextureRV(_pHeightCrateTextureRV, TX_HEIGHTMAP);
-	//gameObject->SetShaderToUse(TX_HEIGHTMAP);
+	gameObject->SetShaderToUse(TX_HEIGHTMAP);
 
 	_gameObjects.push_back(gameObject);
 
