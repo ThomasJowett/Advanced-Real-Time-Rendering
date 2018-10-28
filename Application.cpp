@@ -115,9 +115,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	ID3D11ShaderResourceView *_pHeightGroundTextureRV;
 
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Diffuse.dds", nullptr, &_pDiffuseSpaceManTextureRV);
-	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Diffuse.dds", nullptr, &_pDiffuseGroundTextureRV);
+	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Diffuse.dds", nullptr, &_pDiffuseGroundTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Normal.dds", nullptr, &_pNormalSpaceManTextureRV);
-	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Normal.dds", nullptr, &_pNormalGroundTextureRV);
+	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Normal.dds", nullptr, &_pNormalGroundTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Earth_Normal.dds", nullptr, &_pNormalEarthTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Earth_Diffuse.dds", nullptr, &_pDiffuseEarthTextureRV);
 	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\conenormal.dds", nullptr, &_pNormalGroundTextureRV);
@@ -126,7 +126,10 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_NRM.dds", nullptr, &_pNormalCrateTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_COLOR.dds", nullptr, &_pDiffuseCrateTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_HEIGHT.dds", nullptr, &_pHeightCrateTextureRV);
-	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Height.dds", nullptr, &_pHeightGroundTextureRV);
+	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Height.dds", nullptr, &_pHeightGroundTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Pebbles_height.dds", nullptr, &_pHeightGroundTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Pebbles_albedo.dds", nullptr, &_pDiffuseGroundTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Pebbles_normal.dds", nullptr, &_pNormalGroundTextureRV);
 
     // Setup Camera
 	XMFLOAT3 eye = XMFLOAT3(0.0f, 2.0f, -1.0f);
@@ -144,7 +147,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	Mesh cubeGeometry(GeometryGenerator::CreateCube(1.0f, 1.0f,1.0f),_pd3dDevice);
 
-	Mesh planeGeometry(GeometryGenerator::CreateGrid(25.0f, 25.0f, 2, 2, 4, 4), _pd3dDevice);
+	Mesh planeGeometry(GeometryGenerator::CreateGrid(25.0f, 25.0f, 50, 50, 2, 2), _pd3dDevice);
 
 	Mesh sphereGeometry(GeometryGenerator::CreateSphere(1.0f, 20.0f, 20.0f), _pd3dDevice);
 
@@ -800,7 +803,7 @@ void Application::Update(float deltaTime)
 
 	counter+= deltaTime;
 
-	//basicLight.LightPosW.x = sin(counter)*10;
+	basicLight.LightPosW.x = sin(counter)*10;
 }
 
 void Application::Draw()

@@ -70,8 +70,8 @@ struct VS_OUTPUT_PARRALAX
 	float4 PosH : SV_POSITION;
 	float3 NormW : NORMAL;
 	float3 PosW : POSITION;
-	float3 LightVecT : TEXCOORD1;
-	float3 EyeVecT : TEXCOORD2;
+	float3 LightVecT : POSITION2;
+	float3 EyeVecT : POSITION3;
 	float2 Tex : TEXCOORD0;
 };
 
@@ -201,17 +201,12 @@ VS_OUTPUT_PARRALAX ParralaxVS(VS_INPUT input)
 
 	output.NormW = tbnMatrix[2];
 	
-	float3 EyeVecW = EyePosW - posW.xyz;
+	float3 EyeVecW = (EyePosW - output.PosW).xyz;
 
-	EyeVecW = normalize(EyeVecW);
-
-	float3 LightVecW = light.LightPosW - posW.xyz;
+	float3 LightVecW = (light.LightPosW - posW).xyz;
 
 	output.LightVecT = normalize(mul(tbnMatrix, LightVecW));
 	output.EyeVecT = normalize(mul(tbnMatrix, EyeVecW));
-	
-	//float3 normalW = mul(float4(input.NormL, 0.0f), World).xyz;
-	//output.NormW = normalize(normalW);
 
 	return output;
 }
@@ -221,7 +216,8 @@ VS_OUTPUT_PARRALAX ParralaxVS(VS_INPUT input)
 //--------------------------------------------------------------------------------------
 float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 {
-	float parralaxLimit = -length(input.EyeVecT.xy) / input.EyeVecT.z;
+	float3 toEye = normalize(input.EyeVecT);
+	float parralaxLimit = -length(toEye.xy) / toEye.z;
 	parralaxLimit *= HeightMapScale;
 	
 	float2 offsetDir = normalize(input.EyeVecT.xy);
@@ -229,7 +225,7 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 	
 	float3 normalW = normalize(input.NormW);
 	float3 toEyeW = normalize(EyePosW - input.PosW);
-	float3 toEye = normalize(input.EyeVecT);
+	
 
 	int NumSamples = (int)lerp(MaxSamples, MinSamples, dot(toEyeW, normalW));
 
