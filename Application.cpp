@@ -239,7 +239,7 @@ HRESULT Application::InitShadersAndInputLayout()
 
 	// Create the pixel shader
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pNormalPixelShader);
-	pPSBlob->Release();
+	
 
 	//Compile the Parralax map vertex shader
 	hr = CompileShaderFromFile(L"DX11 Framework.fx", "ParralaxVS", "vs_4_0", &pVSBlob);
@@ -267,6 +267,10 @@ HRESULT Application::InitShadersAndInputLayout()
 	// Create the pixel shader
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pParralaxPixelShader);
 
+	
+
+	pPSBlob->Release();
+
 	if (FAILED(hr))
 	{
 		MessageBox(nullptr,
@@ -283,7 +287,7 @@ HRESULT Application::InitShadersAndInputLayout()
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
 	UINT numElements = ARRAYSIZE(layout);
@@ -292,6 +296,45 @@ HRESULT Application::InitShadersAndInputLayout()
 	hr = _pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
                                         pVSBlob->GetBufferSize(), &_pVertexLayout);
 	pVSBlob->Release();
+
+	//Compile the PassThrough vertex shader
+	hr = CompileShaderFromFile(L"PostProcess.fx", "PassThroughVS", "vs_4_0", &pVSBlob);
+	
+	if (FAILED(hr))
+	{
+		MessageBox(nullptr,
+			L"The FX file cannot compile Pass Through vertex shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
+	}
+	
+	// Create the Pass Through vertex shader
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pPassThroughVertexShader);
+
+	//Compile the No Post Process pixel shader
+	hr = CompileShaderFromFile(L"PostProcess.fx", "NoPostProcessPS", "ps_4_0", &pPSBlob);
+	
+	if (FAILED(hr))
+	{
+		MessageBox(nullptr,
+			L"The FX file cannot compile PostProcess pixel shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
+	}
+	
+	// Create the PostProcess pixel shader
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pNoPostProcessPixelShader);
+
+	 // Define the input layout
+	D3D11_INPUT_ELEMENT_DESC layoutPostProcess[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+
+	numElements = ARRAYSIZE(layout);
+
+	// Create the input layout
+	hr = _pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
+		pVSBlob->GetBufferSize(), &_pPostProcessLayout);
 
 	if (FAILED(hr))
         return hr;
@@ -623,6 +666,23 @@ HRESULT Application::InitDevice()
     if (FAILED(hr))
         return hr;
 
+	//Render to texture description
+	D3D11_TEXTURE2D_DESC renderToTextureDesc;
+	renderToTextureDesc.Width = _renderWidth;
+	renderToTextureDesc.Height = _renderHeight;
+	renderToTextureDesc.MipLevels = 1;
+	renderToTextureDesc.ArraySize = 1;
+	renderToTextureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	renderToTextureDesc.SampleDesc.Count = sampleCount;
+	renderToTextureDesc.SampleDesc.Quality = 0;
+	renderToTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+	renderToTextureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	renderToTextureDesc.CPUAccessFlags = 0;
+	renderToTextureDesc.MiscFlags = 0;
+	
+	_pd3dDevice->CreateTexture2D(&renderToTextureDesc, nullptr, &_renderToTexture);
+	
+	//Depth Stencil Description
 	D3D11_TEXTURE2D_DESC depthStencilDesc;
 
 	depthStencilDesc.Width = _renderWidth;
@@ -639,6 +699,13 @@ HRESULT Application::InitDevice()
 
 	_pd3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, &_depthStencilBuffer);
 	_pd3dDevice->CreateDepthStencilView(_depthStencilBuffer, nullptr, &_depthStencilView);
+
+	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
+	renderTargetViewDesc.Format = depthStencilDesc.Format;
+	renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	renderTargetViewDesc.Texture2D.MipSlice = 0;
+	
+	_pd3dDevice->CreateRenderTargetView(_renderToTexture, &renderTargetViewDesc, &_renderTargetView);
 
 	_pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
 

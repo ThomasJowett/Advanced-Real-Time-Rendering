@@ -384,7 +384,12 @@
     <FxCompile Include="DX11 Framework.fx">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <FileType>Document</FileType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">main</EntryPointName>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
     </FxCompile>
+    <None Include="PostProcess.fx">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
@@ -402,8 +407,28 @@
     <ResourceCompile Include="DX11 Framework.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Resources\floor.dds" />
-    <Image Include="Resources\stone.dds" />
+    <Image Include="Resources\Ball_Diffuse.dds" />
+    <Image Include="Resources\Ball_Normals.dds" />
+    <Image Include="Resources\conenormal.dds" />
+    <Image Include="Resources\conenormalHeight.dds" />
+    <Image Include="Resources\Crate_COLOR.dds" />
+    <Image Include="Resources\Crate_DISP.dds" />
+    <Image Include="Resources\Crate_HEIGHT.dds" />
+    <Image Include="Resources\Crate_NRM.dds" />
+    <Image Include="Resources\Crate_OCC.dds" />
+    <Image Include="Resources\Crate_SPEC.dds" />
+    <Image Include="Resources\Earth_Diffuse.dds" />
+    <Image Include="Resources\Earth_Normal.dds" />
+    <Image Include="Resources\Floor_Diffuse.dds" />
+    <Image Include="Resources\Floor_Height.dds" />
+    <Image Include="Resources\Floor_Normal.dds" />
+    <Image Include="Resources\Pebbles_albedo.dds" />
+    <Image Include="Resources\Pebbles_Height.dds" />
+    <Image Include="Resources\Pebbles_normal.dds" />
+    <Image Include="Resources\SpaceMan_Diffuse.dds" />
+    <Image Include="Resources\SpaceMan_Normal.dds" />
+    <Image Include="Resources\Stone_Diffuse.dds" />
+    <Image Include="Resources\Stone_Normal.dds" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

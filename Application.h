@@ -45,7 +45,10 @@ private:
 	ID3D11PixelShader*      _pNormalPixelShader;
 	ID3D11VertexShader*     _pParralaxVertexShader;
 	ID3D11PixelShader*      _pParralaxPixelShader;
+	ID3D11VertexShader*     _pPassThroughVertexShader;
+	ID3D11PixelShader*      _pNoPostProcessPixelShader;
 	ID3D11InputLayout*      _pVertexLayout;
+	ID3D11InputLayout*      _pPostProcessLayout;
 
 	ID3D11Buffer*           _pVertexBuffer;
 	ID3D11Buffer*           _pIndexBuffer;
@@ -57,6 +60,9 @@ private:
 
 	ID3D11DepthStencilView* _depthStencilView = nullptr;
 	ID3D11Texture2D* _depthStencilBuffer = nullptr;
+	ID3D11Texture2D* _renderToTexture = nullptr;
+
+	ID3D11RenderTargetView* _renderTargetView;
 
 	ID3D11ShaderResourceView * _pDiffuseStoneTextureRV = nullptr;
 	ID3D11ShaderResourceView * _pNormalStoneTextureRV = nullptr;
