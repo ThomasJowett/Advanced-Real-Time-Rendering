@@ -9,7 +9,7 @@ namespace GeometryGenerator
 
 	IndexedModel CreateGrid(float width, float length, unsigned int widthLines, unsigned int lengthLines, float tileU, float tileV);
 
-	IndexedModel CreateFullScreenQuad(float width, float length);
+	IndexedModel CreateFullScreenQuad();
 
 	IndexedModel CreateCylinder(float bottomRadius, float topRadius, float height, int sliceCount, int stackCount);
 }

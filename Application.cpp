@@ -153,6 +153,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	Mesh SpaceManGeometry(OBJLoader::Load("Resources\\SpaceMan.obj", true), _pd3dDevice);
 
+	_fullscreenQuad = new Mesh(GeometryGenerator::CreateFullScreenQuad(), _pd3dDevice);
+
 	Material shinyMaterial;
 	shinyMaterial.ambient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
 	shinyMaterial.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -700,12 +702,24 @@ HRESULT Application::InitDevice()
 	_pd3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, &_depthStencilBuffer);
 	_pd3dDevice->CreateDepthStencilView(_depthStencilBuffer, nullptr, &_depthStencilView);
 
+	//Setup the description of the render target view
 	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
 	renderTargetViewDesc.Format = depthStencilDesc.Format;
 	renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 	renderTargetViewDesc.Texture2D.MipSlice = 0;
 	
 	_pd3dDevice->CreateRenderTargetView(_renderToTexture, &renderTargetViewDesc, &_renderTargetView);
+
+	//Setup the shader Resource view description
+	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
+
+	shaderResourceViewDesc.Format = renderToTextureDesc.Format;
+	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
+	shaderResourceViewDesc.Texture2D.MipLevels = 1;
+
+	_pd3dDevice->CreateShaderResourceView(_renderToTexture, &shaderResourceViewDesc, &_shaderResourceView);
+
 
 	_pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
 
@@ -879,6 +893,8 @@ void Application::Draw()
     // Clear buffers
     //
 
+	_pImmediateContext->OMSetRenderTargets(1, &_renderTargetView, _depthStencilView);
+
 	float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f }; // red,green,blue,alpha
     _pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
 	_pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
@@ -889,9 +905,6 @@ void Application::Draw()
 	_pImmediateContext->RSSetState(ViewMode());
 
 	_pImmediateContext->IASetInputLayout(_pVertexLayout);
-
-	//_pImmediateContext->VSSetShader(_pVertexShader, nullptr, 0);
-	//_pImmediateContext->PSSetShader(_pPixelShader, nullptr, 0);
 
 	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
@@ -965,6 +978,19 @@ void Application::Draw()
 		// Draw object
 		gameObject->Draw(_pImmediateContext);
 	}
+
+	//Switch to rendering to the back buffer
+	_pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, nullptr);
+	_pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
+
+	_pImmediateContext->PSSetShaderResources(0, 1, &_shaderResourceView);
+	_pImmediateContext->VSSetShader(_pPassThroughVertexShader, nullptr, 0);
+	_pImmediateContext->PSSetShader(_pNoPostProcessPixelShader, nullptr, 0);
+
+	_pImmediateContext->IASetVertexBuffers(0, 1, &_fullscreenQuad->vertexBuffer, &_fullscreenQuad->vertexBufferStride, &_fullscreenQuad->vertexBufferOffset);
+	_pImmediateContext->IASetIndexBuffer(_fullscreenQuad->indexBuffer, DXGI_FORMAT_R16_UINT, 0);
+
+	_pImmediateContext->DrawIndexed(_fullscreenQuad->numberOfIndices, 0, 0);
 
     //
     // Present our back buffer to our front buffer

@@ -262,7 +262,7 @@ IndexedModel GeometryGenerator::CreateGrid(float width, float length, unsigned i
 	return returnModel;
 }
 
-IndexedModel GeometryGenerator::CreateFullScreenQuad(float width, float length)
+IndexedModel GeometryGenerator::CreateFullScreenQuad()
 {
 	IndexedModel returnModel;
 

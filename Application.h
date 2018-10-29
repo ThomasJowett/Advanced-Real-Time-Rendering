@@ -56,11 +56,14 @@ private:
 	ID3D11Buffer*           _pPlaneVertexBuffer;
 	ID3D11Buffer*           _pPlaneIndexBuffer;
 
+	Mesh*					_fullscreenQuad;
+
 	ID3D11Buffer*           _pConstantBuffer;
 
 	ID3D11DepthStencilView* _depthStencilView = nullptr;
 	ID3D11Texture2D* _depthStencilBuffer = nullptr;
 	ID3D11Texture2D* _renderToTexture = nullptr;
+	ID3D11ShaderResourceView* _shaderResourceView = nullptr;
 
 	ID3D11RenderTargetView* _renderTargetView;
 
