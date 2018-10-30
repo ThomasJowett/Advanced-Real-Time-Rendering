@@ -60,18 +60,22 @@ private:
 
 	ID3D11Buffer*           _pConstantBuffer;
 
-	ID3D11DepthStencilView* _depthStencilView = nullptr;
-	ID3D11Texture2D* _depthStencilBuffer = nullptr;
-	ID3D11Texture2D* _renderToTexture = nullptr;
-	ID3D11ShaderResourceView* _shaderResourceView = nullptr;
+	ID3D11DepthStencilView*		_depthStencilView = nullptr;
+	ID3D11Texture2D*			_depthStencilBuffer = nullptr;
+	ID3D11RenderTargetView*		_renderTargetView;
 
-	ID3D11RenderTargetView* _renderTargetView;
+	//Render To Texture
+	ID3D11Texture2D*			_RTTRenderTargetTexture = nullptr;
+	ID3D11ShaderResourceView*	_RTTshaderResourceView = nullptr;
+	ID3D11RenderTargetView*		_RTTRenderTargetView;
 
 	ID3D11ShaderResourceView * _pDiffuseStoneTextureRV = nullptr;
 	ID3D11ShaderResourceView * _pNormalStoneTextureRV = nullptr;
 
 	ID3D11ShaderResourceView * _pDiffuseGroundTextureRV = nullptr;
 	ID3D11ShaderResourceView * _pNormalGroundTextureRV = nullptr;
+
+	ID3D11ShaderResourceView * _pVingetteTextureRV = nullptr;
 
 	ID3D11SamplerState * _pSamplerLinear = nullptr;
 

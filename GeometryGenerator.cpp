@@ -271,7 +271,7 @@ IndexedModel GeometryGenerator::CreateFullScreenQuad()
 
 	// Position coordinates specified in NDC space.
 	returnModel.Vertices[0] = SimpleVertex(
-		-1.0f, -1.0f, 0.0f,
+		-1.f, -1.0f, 0.0f,
 		0.0f, 0.0f, -1.0f,
 		1.0f, 0.0f, 0.0f,
 		0.0f, 1.0f);

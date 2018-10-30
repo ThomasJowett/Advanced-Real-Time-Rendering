@@ -130,6 +130,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Pebbles_height.dds", nullptr, &_pHeightGroundTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Pebbles_albedo.dds", nullptr, &_pDiffuseGroundTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Pebbles_normal.dds", nullptr, &_pNormalGroundTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Vingette.dds", nullptr, &_pVingetteTextureRV);
 
     // Setup Camera
 	XMFLOAT3 eye = XMFLOAT3(0.0f, 2.0f, -1.0f);
@@ -178,7 +179,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	_gameObjects.push_back(gameObject);
 
-	transform = new Transform(Vector3D(0.0f, 1.0f, 0.0f), Quaternion(1, 0, 0, 0), Vector3D(1.0f, 1.0f, 1.0f));
+	transform = new Transform(Vector3D(0.0f, 1.0f, 0.0f), Quaternion(1, 0, 0, 0), Vector3D(10.0f, 10.0f, 10.0f));
 
 	gameObject = new GameObject("Crate", transform, cubeGeometry, shinyMaterial);
 	gameObject->SetTextureRV(_pDiffuseCrateTextureRV, TX_DIFFUSE);
@@ -668,22 +669,6 @@ HRESULT Application::InitDevice()
     if (FAILED(hr))
         return hr;
 
-	//Render to texture description
-	D3D11_TEXTURE2D_DESC renderToTextureDesc;
-	renderToTextureDesc.Width = _renderWidth;
-	renderToTextureDesc.Height = _renderHeight;
-	renderToTextureDesc.MipLevels = 1;
-	renderToTextureDesc.ArraySize = 1;
-	renderToTextureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	renderToTextureDesc.SampleDesc.Count = sampleCount;
-	renderToTextureDesc.SampleDesc.Quality = 0;
-	renderToTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-	renderToTextureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	renderToTextureDesc.CPUAccessFlags = 0;
-	renderToTextureDesc.MiscFlags = 0;
-	
-	_pd3dDevice->CreateTexture2D(&renderToTextureDesc, nullptr, &_renderToTexture);
-	
 	//Depth Stencil Description
 	D3D11_TEXTURE2D_DESC depthStencilDesc;
 
@@ -702,26 +687,50 @@ HRESULT Application::InitDevice()
 	_pd3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, &_depthStencilBuffer);
 	_pd3dDevice->CreateDepthStencilView(_depthStencilBuffer, nullptr, &_depthStencilView);
 
-	//Setup the description of the render target view
+	
+	D3D11_TEXTURE2D_DESC textureDesc;
 	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
-	renderTargetViewDesc.Format = depthStencilDesc.Format;
+	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
+
+	//Texture description
+	ZeroMemory(&textureDesc, sizeof(textureDesc));
+
+	textureDesc.Width = _renderWidth;
+	textureDesc.Height = _renderHeight;
+	textureDesc.MipLevels = 1;
+	textureDesc.ArraySize = 1;
+	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+	textureDesc.Usage = D3D11_USAGE_DEFAULT;
+	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.CPUAccessFlags = 0;
+	textureDesc.MiscFlags = 0;
+	
+	//create the texture
+	_pd3dDevice->CreateTexture2D(&textureDesc, nullptr, &_RTTRenderTargetTexture);
+
+	//Setup the description of the render target view
+	renderTargetViewDesc.Format = textureDesc.Format;
 	renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 	renderTargetViewDesc.Texture2D.MipSlice = 0;
 	
-	_pd3dDevice->CreateRenderTargetView(_renderToTexture, &renderTargetViewDesc, &_renderTargetView);
+	hr = _pd3dDevice->CreateRenderTargetView(_RTTRenderTargetTexture, &renderTargetViewDesc, &_RTTRenderTargetView);
+
+	if (FAILED(hr))
+		return hr;
 
 	//Setup the shader Resource view description
-	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
 
-	shaderResourceViewDesc.Format = renderToTextureDesc.Format;
+	shaderResourceViewDesc.Format = textureDesc.Format;
 	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
 	shaderResourceViewDesc.Texture2D.MipLevels = 1;
 
-	_pd3dDevice->CreateShaderResourceView(_renderToTexture, &shaderResourceViewDesc, &_shaderResourceView);
+	_pd3dDevice->CreateShaderResourceView(_RTTRenderTargetTexture, &shaderResourceViewDesc, &_RTTshaderResourceView);
 
 
-	_pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
+	//_pImmediateContext->OMSetRenderTargets(1, &_RTTRenderTargetView, _depthStencilView);
 
 	// Rasterizer
 	D3D11_RASTERIZER_DESC cmdesc;
@@ -889,14 +898,17 @@ void Application::Update(float deltaTime)
 
 void Application::Draw()
 {
-    //
+	//Set the render target
+	_pImmediateContext->OMSetRenderTargets(1, &_RTTRenderTargetView, _depthStencilView);//<-Does nothing?
+	//_pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
+
+	//
     // Clear buffers
     //
-
-	_pImmediateContext->OMSetRenderTargets(1, &_renderTargetView, _depthStencilView);
-
 	float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f }; // red,green,blue,alpha
-    _pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
+    _pImmediateContext->ClearRenderTargetView(_RTTRenderTargetView, ClearColor);
+	ClearColor[1] = 0.0f;
+	_pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
 	_pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     //
@@ -979,17 +991,39 @@ void Application::Draw()
 		gameObject->Draw(_pImmediateContext);
 	}
 
-	//Switch to rendering to the back buffer
-	_pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, nullptr);
-	_pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
+	// Save the old viewport
+	D3D11_VIEWPORT vpOld[D3D11_VIEWPORT_AND_SCISSORRECT_MAX_INDEX];
+	UINT nViewPorts = 1;
+	_pImmediateContext->RSGetViewports(&nViewPorts, vpOld);
 
-	_pImmediateContext->PSSetShaderResources(0, 1, &_shaderResourceView);
+	// Setup the viewport to match the backbuffer
+	D3D11_VIEWPORT vp;
+	vp.Width = (float)_renderWidth;
+	vp.Height = (float)_renderHeight;
+	vp.MinDepth = 0.0f;
+	vp.MaxDepth = 1.0f;
+	vp.TopLeftX = 0;
+	vp.TopLeftY = 0;
+	_pImmediateContext->RSSetViewports(1, &vp);
+
+
+	//Switch to rendering to the back buffer
+	
+	_pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
+	
+	_pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	
+	_pImmediateContext->IASetInputLayout(_pPostProcessLayout);
+	
+	_pImmediateContext->PSSetShaderResources(0, 1, &_RTTshaderResourceView);
+	_pImmediateContext->PSSetShaderResources(0, 1, &_pNormalGroundTextureRV);
+	_pImmediateContext->PSSetShaderResources(1, 1, &_pVingetteTextureRV);
 	_pImmediateContext->VSSetShader(_pPassThroughVertexShader, nullptr, 0);
 	_pImmediateContext->PSSetShader(_pNoPostProcessPixelShader, nullptr, 0);
-
+	
 	_pImmediateContext->IASetVertexBuffers(0, 1, &_fullscreenQuad->vertexBuffer, &_fullscreenQuad->vertexBufferStride, &_fullscreenQuad->vertexBufferOffset);
 	_pImmediateContext->IASetIndexBuffer(_fullscreenQuad->indexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
+	
 	_pImmediateContext->DrawIndexed(_fullscreenQuad->numberOfIndices, 0, 0);
 
     //
