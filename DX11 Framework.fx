@@ -65,6 +65,16 @@ struct VS_OUTPUT_NORMAL
 };
 
 //--------------------------------------------------------------------------------------
+struct VS_OUTPUT_SIMPLE_PARRALAX
+{
+	float4 PosH : SV_POSITION;
+	float3 PosW : POSITION;
+	float LightVecT : POSITION2;
+	float EyeVecT : POSITION3;
+	float2 Tex : TEXCOORD0;
+};
+
+//--------------------------------------------------------------------------------------
 struct VS_OUTPUT_PARRALAX
 {
 	float4 PosH : SV_POSITION;
@@ -178,9 +188,82 @@ float4 NormalPS(VS_OUTPUT_NORMAL input) : SV_Target
 
 	return finalColour;
 }
-
 //--------------------------------------------------------------------------------------
 // Parralax Vertex Shader
+//--------------------------------------------------------------------------------------
+VS_OUTPUT_SIMPLE_PARRALAX SimpleParralaxVS(VS_INPUT input)
+{
+	VS_OUTPUT_SIMPLE_PARRALAX output = (VS_OUTPUT_SIMPLE_PARRALAX)0;
+
+	float4 posW = mul(input.PosL, World);
+	output.PosW = posW.xyz;
+
+	output.PosH = mul(posW, View);
+	output.PosH = mul(output.PosH, Projection);
+
+	float3x3 tbnMatrix;
+	tbnMatrix[0] = normalize(mul(float4(input.TangentL, 0.0f), World).xyz);
+	tbnMatrix[1] = normalize(mul(float4(cross(input.NormL, input.TangentL), 0.0f), World).xyz);
+	tbnMatrix[2] = normalize(mul(float4(input.NormL, 0.0f), World).xyz);
+
+	output.Tex = input.Tex;
+
+	float3 EyeVecW = (EyePosW - output.PosW).xyz;
+
+	float3 LightVecW = (light.LightPosW - posW).xyz;
+
+	output.LightVecT = normalize(mul(tbnMatrix, LightVecW));
+	output.EyeVecT = normalize(mul(tbnMatrix, EyeVecW));
+
+	return output;
+}
+//--------------------------------------------------------------------------------------
+// Parralax Pixel Shader
+//--------------------------------------------------------------------------------------
+float4 SimpleParralaxPS(VS_OUTPUT_SIMPLE_PARRALAX input) : SV_Target
+{
+	//Expand the range of the normal value from (0, +1) to (-1, +1)
+	bumpMap = (bumpMap * 2.0f) - 1.0f;
+
+	float3 ambient = float3(0.0f, 0.0f, 0.0f);
+	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
+	float3 specular = float3(0.0f, 0.0f, 0.0f);
+
+	//float3 lightLecNorm = normalize(light.LightPosW - input.PosW);
+	float3 lightLecNorm = normalize(input.LightVecT);
+	// Compute Colour
+
+	// Compute the reflection vector.
+	float3 r = reflect(-lightLecNorm, bumpMap.xyz);
+
+	// Determine how much specular light makes it into the eye.
+	float specularAmount = pow(max(dot(r, toEye), 0.0f), light.SpecularPower);
+
+	// Determine the diffuse light intensity that strikes the vertex.
+	float diffuseAmount = max(dot(lightLecNorm, bumpMap.xyz), 0.0f);
+
+	// Only display specular when there is diffuse
+	if (diffuseAmount <= 0.0f)
+	{
+		specularAmount = 0.0f;
+	}
+
+	// Compute the ambient, diffuse, and specular terms separately.
+	specular += specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb;
+	diffuse += diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb;
+	ambient += (surface.AmbientMtrl * light.AmbientLight).rgb;
+
+	// Sum all the terms together and copy over the diffuse alpha.
+	float4 finalColour;
+
+	finalColour.rgb = (textureColour.rgb * (ambient + diffuse)) + specular;
+
+	finalColour.a = surface.DiffuseMtrl.a;
+	
+	return finalColour;
+}
+//--------------------------------------------------------------------------------------
+// Parralax Occlusion Vertex Shader
 //--------------------------------------------------------------------------------------
 VS_OUTPUT_PARRALAX ParralaxVS(VS_INPUT input)
 {
@@ -212,7 +295,7 @@ VS_OUTPUT_PARRALAX ParralaxVS(VS_INPUT input)
 }
 
 //--------------------------------------------------------------------------------------
-// Parralax Pixel Shader
+// Parralax Occlusion Pixel Shader
 //--------------------------------------------------------------------------------------
 float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 {

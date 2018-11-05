@@ -179,7 +179,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	_gameObjects.push_back(gameObject);
 
-	transform = new Transform(Vector3D(0.0f, 1.0f, 0.0f), Quaternion(1, 0, 0, 0), Vector3D(10.0f, 10.0f, 10.0f));
+	transform = new Transform(Vector3D(0.0f, 1.0f, 0.0f), Quaternion(1, 0, 0, 0), Vector3D(1.0f, 1.0f, 1.0f));
 
 	gameObject = new GameObject("Crate", transform, cubeGeometry, shinyMaterial);
 	gameObject->SetTextureRV(_pDiffuseCrateTextureRV, TX_DIFFUSE);
@@ -598,7 +598,7 @@ HRESULT Application::InitDevice()
 
 	UINT numFeatureLevels = ARRAYSIZE(featureLevels);
 
-	UINT sampleCount = 4;
+	UINT sampleCount = 1;
 
     DXGI_SWAP_CHAIN_DESC sd;
     ZeroMemory(&sd, sizeof(sd));
@@ -699,8 +699,8 @@ HRESULT Application::InitDevice()
 	textureDesc.Height = _renderHeight;
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 1;
-	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	textureDesc.SampleDesc.Count = 1;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.SampleDesc.Count = sampleCount;
 	textureDesc.SampleDesc.Quality = 0;
 	textureDesc.Usage = D3D11_USAGE_DEFAULT;
 	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
@@ -899,16 +899,15 @@ void Application::Update(float deltaTime)
 void Application::Draw()
 {
 	//Set the render target
-	_pImmediateContext->OMSetRenderTargets(1, &_RTTRenderTargetView, _depthStencilView);//<-Does nothing?
-	//_pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
+	_pImmediateContext->OMSetRenderTargets(1, &_RTTRenderTargetView, _depthStencilView);
 
 	//
     // Clear buffers
     //
 	float ClearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f }; // red,green,blue,alpha
-    _pImmediateContext->ClearRenderTargetView(_RTTRenderTargetView, ClearColor);
+    _pImmediateContext->ClearRenderTargetView(_RTTRenderTargetView, ClearColor);//grey
 	ClearColor[1] = 0.0f;
-	_pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);
+	_pImmediateContext->ClearRenderTargetView(_pRenderTargetView, ClearColor);//purple
 	_pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     //
@@ -991,22 +990,6 @@ void Application::Draw()
 		gameObject->Draw(_pImmediateContext);
 	}
 
-	// Save the old viewport
-	D3D11_VIEWPORT vpOld[D3D11_VIEWPORT_AND_SCISSORRECT_MAX_INDEX];
-	UINT nViewPorts = 1;
-	_pImmediateContext->RSGetViewports(&nViewPorts, vpOld);
-
-	// Setup the viewport to match the backbuffer
-	D3D11_VIEWPORT vp;
-	vp.Width = (float)_renderWidth;
-	vp.Height = (float)_renderHeight;
-	vp.MinDepth = 0.0f;
-	vp.MaxDepth = 1.0f;
-	vp.TopLeftX = 0;
-	vp.TopLeftY = 0;
-	_pImmediateContext->RSSetViewports(1, &vp);
-
-
 	//Switch to rendering to the back buffer
 	
 	_pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
@@ -1016,7 +999,6 @@ void Application::Draw()
 	_pImmediateContext->IASetInputLayout(_pPostProcessLayout);
 	
 	_pImmediateContext->PSSetShaderResources(0, 1, &_RTTshaderResourceView);
-	_pImmediateContext->PSSetShaderResources(0, 1, &_pNormalGroundTextureRV);
 	_pImmediateContext->PSSetShaderResources(1, 1, &_pVingetteTextureRV);
 	_pImmediateContext->VSSetShader(_pPassThroughVertexShader, nullptr, 0);
 	_pImmediateContext->PSSetShader(_pNoPostProcessPixelShader, nullptr, 0);
