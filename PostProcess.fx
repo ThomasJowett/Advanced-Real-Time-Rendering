@@ -78,10 +78,31 @@ VS_OUTPUT PassThroughVS(VS_INPUT input)
 
 float4 NoPostProcessPS(VS_OUTPUT input) : SV_Target
 {
-	float4 textureColour =  txDiffuse.Sample(samLinear, input.Tex);
+	float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
 	float4 vingetteColour = vingette.Sample(samLinear, input.Tex);
 
-	float4 finalColour = lerp(0.3f,textureColour, vingetteColour);
+	float4 finalColour = lerp(0.0f, textureColour, vingetteColour + 0.5f);
 	//finalColour += vingetteColour/2;
 	return finalColour;
+}
+
+//------------------------------------------------------------------------------------
+// Gaussian Blur Pixel Shader
+//--------------------------------------------------------------------------------------
+float4 GaussianBlurPS(VS_OUTPUT input) : SV_Target
+{
+	float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
+
+	float2 position = { 0.0f,0.01f };
+	textureColour += txDiffuse.Sample(samLinear, input.Tex + position);
+	float2 position2 = { 0.0f, -0.01f };
+	textureColour += txDiffuse.Sample(samLinear, input.Tex + position2);
+	float2 position3 = { 0.001f, 0.0f };
+	textureColour += txDiffuse.Sample(samLinear, input.Tex + position3);
+	float2 position4 = { -0.001f, 0.0f };
+	textureColour += txDiffuse.Sample(samLinear, input.Tex + position4);
+
+	textureColour /= 5;
+
+	return textureColour;
 }

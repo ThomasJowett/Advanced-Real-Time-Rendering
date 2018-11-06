@@ -104,6 +104,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	ID3D11ShaderResourceView * _pNormalEarthTextureRV;
 	ID3D11ShaderResourceView *_pDiffuseEarthTextureRV;
+	ID3D11ShaderResourceView * _pHeightEarthTextureRV;
 
 	ID3D11ShaderResourceView * _pNormalSpaceManTextureRV;
 	ID3D11ShaderResourceView *_pDiffuseSpaceManTextureRV;
@@ -114,23 +115,48 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	ID3D11ShaderResourceView *_pHeightGroundTextureRV;
 
-	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Diffuse.dds", nullptr, &_pDiffuseSpaceManTextureRV);
+	ID3D11ShaderResourceView * _pNormalGunTextureRV;
+	ID3D11ShaderResourceView *_pDiffuseGunTextureRV;
+	ID3D11ShaderResourceView *_pHeightGunTextureRV;
+	ID3D11ShaderResourceView *_pMetalGunTextureRV;
+	ID3D11ShaderResourceView *_pAOGunTextureRV;
+	ID3D11ShaderResourceView *_pEmissiveGunTextureRV;
+
 	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Diffuse.dds", nullptr, &_pDiffuseGroundTextureRV);
-	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Normal.dds", nullptr, &_pNormalSpaceManTextureRV);
+	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Height.dds", nullptr, &_pHeightGroundTextureRV);
 	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Normal.dds", nullptr, &_pNormalGroundTextureRV);
+
+	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\conenormal.dds", nullptr, &_pNormalGroundTextureRV);
+
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Diffuse.dds", nullptr, &_pDiffuseSpaceManTextureRV);
+	
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Normal.dds", nullptr, &_pNormalSpaceManTextureRV);
+
+	
+
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Earth_Normal.dds", nullptr, &_pNormalEarthTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Earth_Diffuse.dds", nullptr, &_pDiffuseEarthTextureRV);
-	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\conenormal.dds", nullptr, &_pNormalGroundTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Earth_Height.dds", nullptr, &_pHeightEarthTextureRV);
+	
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_Diffuse.dds", nullptr, &_pDiffuseStoneTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Stone_Normal.dds", nullptr, &_pNormalStoneTextureRV);
+
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_NRM.dds", nullptr, &_pNormalCrateTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_COLOR.dds", nullptr, &_pDiffuseCrateTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Crate_HEIGHT.dds", nullptr, &_pHeightCrateTextureRV);
-	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Height.dds", nullptr, &_pHeightGroundTextureRV);
+
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Pebbles_height.dds", nullptr, &_pHeightGroundTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Pebbles_albedo.dds", nullptr, &_pDiffuseGroundTextureRV);
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Pebbles_normal.dds", nullptr, &_pNormalGroundTextureRV);
+
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Vingette.dds", nullptr, &_pVingetteTextureRV);
+	
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\GunGS_Albedo.dds", nullptr, &_pDiffuseGunTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\GunGS_Normal.dds", nullptr, &_pNormalGunTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\GunGS_Height.dds", nullptr, &_pHeightGunTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\GunGS_AO.dds", nullptr, &_pAOGunTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\GunGS_Metallic.dds", nullptr, &_pMetalGunTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\GunGS_Emissive.dds", nullptr, &_pEmissiveGunTextureRV);
 
     // Setup Camera
 	XMFLOAT3 eye = XMFLOAT3(0.0f, 2.0f, -1.0f);
@@ -154,6 +180,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	Mesh SpaceManGeometry(OBJLoader::Load("Resources\\SpaceMan.obj", true), _pd3dDevice);
 
+	Mesh GunGeometry(OBJLoader::Load("Resources\\Gun.obj", true), _pd3dDevice);
+
 	_fullscreenQuad = new Mesh(GeometryGenerator::CreateFullScreenQuad(), _pd3dDevice);
 
 	Material shinyMaterial;
@@ -161,6 +189,12 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	shinyMaterial.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	shinyMaterial.specular = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	shinyMaterial.specularPower = 10.0f;
+
+	Material metal;
+	metal.ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
+	metal.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	metal.specular = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	metal.specularPower = 20.0f;
 
 	Material noSpecMaterial;
 	noSpecMaterial.ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
@@ -175,7 +209,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	gameObject->SetTextureRV(_pDiffuseGroundTextureRV, TX_DIFFUSE);
 	gameObject->SetTextureRV(_pNormalGroundTextureRV, TX_NORMAL);
 	gameObject->SetTextureRV(_pHeightGroundTextureRV, TX_HEIGHTMAP);
-	gameObject->SetShaderToUse(TX_HEIGHTMAP);
+
+	gameObject->SetShaderToUse(FX_PARRALAXED_OCCLUSION);
 
 	_gameObjects.push_back(gameObject);
 
@@ -185,7 +220,23 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	gameObject->SetTextureRV(_pDiffuseCrateTextureRV, TX_DIFFUSE);
 	gameObject->SetTextureRV(_pNormalCrateTextureRV, TX_NORMAL);
 	gameObject->SetTextureRV(_pHeightCrateTextureRV, TX_HEIGHTMAP);
-	gameObject->SetShaderToUse(TX_HEIGHTMAP);
+	gameObject->SetShaderToUse(FX_PARRALAXED);
+
+	_gameObjects.push_back(gameObject);
+
+	transform = new Transform(Vector3D(5.0f, 1.0f, 0.0f), Vector3D(0, XM_PI, 0), Vector3D(0.01f, 0.01f, 0.01f));
+
+	gameObject = new GameObject("SpaceMan", transform, SpaceManGeometry, shinyMaterial);
+	gameObject->SetTextureRV(_pDiffuseSpaceManTextureRV, TX_DIFFUSE);
+	gameObject->SetTextureRV(_pNormalSpaceManTextureRV, TX_NORMAL);
+
+	_gameObjects.push_back(gameObject);
+
+	transform = new Transform(Vector3D(-5.0f, 1.0f, 0.0f), Vector3D(0, 0, 0), Vector3D(0.01f, 0.01f, 0.01f));
+
+	gameObject = new GameObject("Gun", transform, GunGeometry, metal); 
+	gameObject->SetTextureRV(_pDiffuseGunTextureRV, TX_DIFFUSE);
+	gameObject->SetTextureRV(_pNormalGunTextureRV, TX_NORMAL);
 
 	_gameObjects.push_back(gameObject);
 
@@ -243,9 +294,8 @@ HRESULT Application::InitShadersAndInputLayout()
 	// Create the pixel shader
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pNormalPixelShader);
 	
-
 	//Compile the Parralax map vertex shader
-	hr = CompileShaderFromFile(L"DX11 Framework.fx", "ParralaxVS", "vs_4_0", &pVSBlob);
+	hr = CompileShaderFromFile(L"DX11 Framework.fx", "SimpleParralaxVS", "vs_4_0", &pVSBlob);
 
 	if (FAILED(hr))
 	{
@@ -258,6 +308,32 @@ HRESULT Application::InitShadersAndInputLayout()
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pParralaxVertexShader);
 
 	//Compile the Parralax map pixel shader
+	hr = CompileShaderFromFile(L"DX11 Framework.fx", "SimpleParralaxPS", "ps_4_0", &pPSBlob);
+
+	if (FAILED(hr))
+	{
+		MessageBox(nullptr,
+			L"The FX file cannot compile simple parralax pixel shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
+	}
+
+	// Create the pixel shader
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pParralaxPixelShader);
+
+	//Compile the Parralax map vertex shader
+	hr = CompileShaderFromFile(L"DX11 Framework.fx", "ParralaxVS", "vs_4_0", &pVSBlob);
+
+	if (FAILED(hr))
+	{
+		MessageBox(nullptr,
+			L"The FX file cannot compile simple parralax vertex shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
+	}
+
+	// Create the Parralax map vertex shader
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pParralaxOcclusionVertexShader);
+
+	//Compile the Parralax map pixel shader
 	hr = CompileShaderFromFile(L"DX11 Framework.fx", "ParralaxPS", "ps_4_0", &pPSBlob);
 
 	if (FAILED(hr))
@@ -268,7 +344,7 @@ HRESULT Application::InitShadersAndInputLayout()
 	}
 
 	// Create the pixel shader
-	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pParralaxPixelShader);
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pParralaxOcclusionPixelShader);
 
 	
 
@@ -677,7 +753,7 @@ HRESULT Application::InitDevice()
 	depthStencilDesc.MipLevels = 1;
 	depthStencilDesc.ArraySize = 1;
 	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthStencilDesc.SampleDesc.Count = sampleCount;
+	depthStencilDesc.SampleDesc.Count = 1;
 	depthStencilDesc.SampleDesc.Quality = 0;
 	depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
 	depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
@@ -700,7 +776,7 @@ HRESULT Application::InitDevice()
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 1;
 	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	textureDesc.SampleDesc.Count = sampleCount;
+	textureDesc.SampleDesc.Count = 1;
 	textureDesc.SampleDesc.Quality = 0;
 	textureDesc.Usage = D3D11_USAGE_DEFAULT;
 	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
@@ -872,6 +948,16 @@ void Application::Update(float deltaTime)
 		Rotate(1);
 	}
 
+	if (GetAsyncKeyState('8'))
+	{
+		heightMapScale += 0.001f;
+	}
+
+	if (GetAsyncKeyState('9'))
+	{
+		heightMapScale -= 0.001f;
+	}
+
 	// Update camera
 	float angleAroundZ = XMConvertToRadians(_cameraOrbitAngleXZ);
 
@@ -935,7 +1021,7 @@ void Application::Draw()
 	cb.light = basicLight;
 	cb.EyePosW = _camera->GetPosition();
 
-	cb.HeightMapScale = 0.05f;
+	cb.HeightMapScale = 0.01f;
 	cb.MaxSamples = 1000;
 	cb.MinSamples = 1;
 
@@ -952,35 +1038,52 @@ void Application::Draw()
 
 		// Set world matrix
 		cb.World = XMMatrixTranspose(gameObject->GetTransform()->GetWorldMatrix());
+		ID3D11ShaderResourceView * textureRV;
 
-		// Set texture
-		if (gameObject->GetShaderToUse() == TX_NORMAL)//Use NormalMap Shader
+		switch (gameObject->GetShaderToUse())
 		{
+		case FX_NORMAL:
 			_pImmediateContext->VSSetShader(_pNormalVertexShader, nullptr, 0);
 			_pImmediateContext->PSSetShader(_pNormalPixelShader, nullptr, 0);
-		
-			ID3D11ShaderResourceView * textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
+
+			textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
 			_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
 			textureRV = gameObject->GetTextureRV(TX_NORMAL);
 			_pImmediateContext->PSSetShaderResources(1, 1, &textureRV);
 			cb.HasTexture = 1.0f;
-		}
-		else if (gameObject->GetShaderToUse() == TX_HEIGHTMAP)//Use Parralax Shader
-		{
+			break;
+		case FX_PARRALAXED:
+			cb.HeightMapScale = heightMapScale;
 			_pImmediateContext->VSSetShader(_pParralaxVertexShader, nullptr, 0);
 			_pImmediateContext->PSSetShader(_pParralaxPixelShader, nullptr, 0);
 
-			ID3D11ShaderResourceView * textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
+			textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
 			_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
 			textureRV = gameObject->GetTextureRV(TX_NORMAL);
 			_pImmediateContext->PSSetShaderResources(1, 1, &textureRV);
 			textureRV = gameObject->GetTextureRV(TX_HEIGHTMAP);
 			_pImmediateContext->PSSetShaderResources(2, 1, &textureRV);
 			cb.HasTexture = 1.0f;
-		}
-		else
-		{
-			cb.HasTexture = 0.0f;
+			break;
+		case FX_PARRALAXED_OCCLUSION:
+			cb.HeightMapScale = heightMapScale;
+			_pImmediateContext->VSSetShader(_pParralaxOcclusionVertexShader, nullptr, 0);
+			_pImmediateContext->PSSetShader(_pParralaxOcclusionPixelShader, nullptr, 0);
+
+			textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
+			_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
+			textureRV = gameObject->GetTextureRV(TX_NORMAL);
+			_pImmediateContext->PSSetShaderResources(1, 1, &textureRV);
+			textureRV = gameObject->GetTextureRV(TX_HEIGHTMAP);
+			_pImmediateContext->PSSetShaderResources(2, 1, &textureRV);
+			cb.HasTexture = 1.0f;
+			break;
+		case FX_BLOCK_COLOUR:
+			break;
+		case FX_SKY:
+			break;
+		default:
+			break;
 		}
 
 		// Update constant buffer
@@ -991,8 +1094,8 @@ void Application::Draw()
 	}
 
 	//Switch to rendering to the back buffer
-	
-	_pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, _depthStencilView);
+	_pImmediateContext->RSSetState(RSCull);
+	_pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, nullptr);
 	
 	_pImmediateContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	

@@ -69,8 +69,8 @@ struct VS_OUTPUT_SIMPLE_PARRALAX
 {
 	float4 PosH : SV_POSITION;
 	float3 PosW : POSITION;
-	float LightVecT : POSITION2;
-	float EyeVecT : POSITION3;
+	float3 LightVecT : POSITION2;
+	float3 EyeVecT : POSITION3;
 	float2 Tex : TEXCOORD0;
 };
 
@@ -222,32 +222,46 @@ VS_OUTPUT_SIMPLE_PARRALAX SimpleParralaxVS(VS_INPUT input)
 //--------------------------------------------------------------------------------------
 float4 SimpleParralaxPS(VS_OUTPUT_SIMPLE_PARRALAX input) : SV_Target
 {
+	float3 toEye = normalize(input.EyeVecT);
+
+	float2 offsetDir = normalize(toEye.xy);
+
+	float height = txHeight.Sample(samLinear, input.Tex).r;
+	height = (height * HeightMapScale * 2.0f) - HeightMapScale;
+
+	float4 tempColour = { input.Tex + (offsetDir * height),0.5f, 1.0f };
+	//return tempColour;
+
+	float2 FinalCoords = input.Tex + (offsetDir * height);
+	float4 textureColour = txDiffuse.Sample(samLinear, FinalCoords);
+	float4 bumpMap = txNormal.Sample(samLinear, FinalCoords);
+
 	//Expand the range of the normal value from (0, +1) to (-1, +1)
 	bumpMap = (bumpMap * 2.0f) - 1.0f;
-
+	
 	float3 ambient = float3(0.0f, 0.0f, 0.0f);
 	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
 	float3 specular = float3(0.0f, 0.0f, 0.0f);
-
-	//float3 lightLecNorm = normalize(light.LightPosW - input.PosW);
+	
+	
 	float3 lightLecNorm = normalize(input.LightVecT);
 	// Compute Colour
-
+	
 	// Compute the reflection vector.
 	float3 r = reflect(-lightLecNorm, bumpMap.xyz);
-
+	
 	// Determine how much specular light makes it into the eye.
 	float specularAmount = pow(max(dot(r, toEye), 0.0f), light.SpecularPower);
-
+	
 	// Determine the diffuse light intensity that strikes the vertex.
 	float diffuseAmount = max(dot(lightLecNorm, bumpMap.xyz), 0.0f);
-
+	
 	// Only display specular when there is diffuse
 	if (diffuseAmount <= 0.0f)
 	{
 		specularAmount = 0.0f;
 	}
-
+	
 	// Compute the ambient, diffuse, and specular terms separately.
 	specular += specularAmount * (surface.SpecularMtrl * light.SpecularLight).rgb;
 	diffuse += diffuseAmount * (surface.DiffuseMtrl * light.DiffuseLight).rgb;
@@ -257,7 +271,7 @@ float4 SimpleParralaxPS(VS_OUTPUT_SIMPLE_PARRALAX input) : SV_Target
 	float4 finalColour;
 
 	finalColour.rgb = (textureColour.rgb * (ambient + diffuse)) + specular;
-
+	
 	finalColour.a = surface.DiffuseMtrl.a;
 	
 	return finalColour;
@@ -303,7 +317,7 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 	float parralaxLimit = -length(toEye.xy) / toEye.z;
 	parralaxLimit *= HeightMapScale;
 	
-	float2 offsetDir = normalize(input.EyeVecT.xy);
+	float2 offsetDir = normalize(toEye.xy);
 	float2 maxOffset = offsetDir * parralaxLimit;
 	
 	float3 normalW = normalize(input.NormW);

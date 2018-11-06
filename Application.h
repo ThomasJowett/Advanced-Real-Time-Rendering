@@ -45,6 +45,8 @@ private:
 	ID3D11PixelShader*      _pNormalPixelShader;
 	ID3D11VertexShader*     _pParralaxVertexShader;
 	ID3D11PixelShader*      _pParralaxPixelShader;
+	ID3D11VertexShader*     _pParralaxOcclusionVertexShader;
+	ID3D11PixelShader*      _pParralaxOcclusionPixelShader;
 	ID3D11VertexShader*     _pPassThroughVertexShader;
 	ID3D11PixelShader*      _pNoPostProcessPixelShader;
 	ID3D11InputLayout*      _pVertexLayout;
@@ -120,7 +122,8 @@ private:
 
 	ID3D11RasterizerState* ViewMode();
 
-	float counter = 0.0f;
+	float counter = 0.01f;
+	float heightMapScale = 0.01f;
 
 public:
 	Application();
