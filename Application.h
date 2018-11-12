@@ -47,10 +47,14 @@ private:
 	ID3D11PixelShader*      _pParralaxPixelShader;
 	ID3D11VertexShader*     _pParralaxOcclusionVertexShader;
 	ID3D11PixelShader*      _pParralaxOcclusionPixelShader;
+	ID3D11PixelShader*      _pBlockColourPixelShader;
 	ID3D11VertexShader*     _pPassThroughVertexShader;
 	ID3D11PixelShader*      _pNoPostProcessPixelShader;
 	ID3D11PixelShader*      _pGaussianBlurPixelShader;
 	ID3D11PixelShader*      _pBloomPixelShader;
+
+	ID3D11HullShader*		_pHullShader = nullptr;
+	ID3D11DomainShader*		_pDomainShader = nullptr;
 	ID3D11InputLayout*      _pVertexLayout;
 	ID3D11InputLayout*      _pPostProcessLayout;
 

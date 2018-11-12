@@ -188,6 +188,16 @@ float4 NormalPS(VS_OUTPUT_NORMAL input) : SV_Target
 
 	return finalColour;
 }
+
+//--------------------------------------------------------------------------------------
+// Block Colour Pixel Shader
+//--------------------------------------------------------------------------------------
+float4 BlockColourPS(VS_OUTPUT_NORMAL input) : SV_Target
+{
+	float4 finalColour = surface.DiffuseMtrl;
+	
+	return finalColour;
+}
 //--------------------------------------------------------------------------------------
 // Parralax Vertex Shader
 //--------------------------------------------------------------------------------------

@@ -249,15 +249,16 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 		transform = new Transform(position, Vector3D(0.0f, 0.0f, 0.0f), Vector3D(1.0f, 1.0f, 1.0f));
 		if (i == 1)
 		{
-			gameObject = new GameObject("Cube " + i, transform, cylinderGeometry, shinyMaterial);
+			gameObject = new GameObject("Cylinder " + i, transform, cylinderGeometry, shinyMaterial);
 		}
 		else if (i == 2)
 		{
-			gameObject = new GameObject("Cube " + i, transform, sphereGeometry, shinyMaterial);
+			gameObject = new GameObject("Sphere " + i, transform, sphereGeometry, shinyMaterial);
 		}
 		else
 		{
 			gameObject = new GameObject("Cube " + i, transform, cubeGeometry, shinyMaterial);
+			gameObject->SetShaderToUse(FX_WIREFRAME);
 		}
 		gameObject->SetTextureRV(_pDiffuseStoneTextureRV,TX_DIFFUSE);
 		gameObject->SetTextureRV(_pNormalStoneTextureRV, TX_NORMAL);
@@ -275,28 +276,32 @@ HRESULT Application::InitShadersAndInputLayout()
 	ID3DBlob* pPSBlob = nullptr;
 
     // Compile the normal map vertex shader
-    hr = CompileShaderFromFile(L"DX11 Framework.fx", "NormalVS", "vs_4_0", &pVSBlob);
+    hr = CompileShaderFromFile(L"DX11 Framework.fx", "NormalVS", "vs_5_0", &pVSBlob);
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pNormalVertexShader);
 
 	// Compile the normal map pixel shader
-    hr = CompileShaderFromFile(L"DX11 Framework.fx", "NormalPS", "ps_4_0", &pPSBlob);
+    hr = CompileShaderFromFile(L"DX11 Framework.fx", "NormalPS", "ps_5_0", &pPSBlob);
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pNormalPixelShader);
 	
 	//Compile the simple Parralax map vertex shader
-	hr = CompileShaderFromFile(L"DX11 Framework.fx", "SimpleParralaxVS", "vs_4_0", &pVSBlob);
+	hr = CompileShaderFromFile(L"DX11 Framework.fx", "SimpleParralaxVS", "vs_5_0", &pVSBlob);
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pParralaxVertexShader);
 
 	//Compile the simple Parralax map pixel shader
-	hr = CompileShaderFromFile(L"DX11 Framework.fx", "SimpleParralaxPS", "ps_4_0", &pPSBlob);
+	hr = CompileShaderFromFile(L"DX11 Framework.fx", "SimpleParralaxPS", "ps_5_0", &pPSBlob);
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pParralaxPixelShader);
 
 	//Compile the Parralax map vertex shader
-	hr = CompileShaderFromFile(L"DX11 Framework.fx", "ParralaxVS", "vs_4_0", &pVSBlob);
+	hr = CompileShaderFromFile(L"DX11 Framework.fx", "ParralaxVS", "vs_5_0", &pVSBlob);
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pParralaxOcclusionVertexShader);
 
 	//Compile the Parralax map pixel shader
-	hr = CompileShaderFromFile(L"DX11 Framework.fx", "ParralaxPS", "ps_4_0", &pPSBlob);
+	hr = CompileShaderFromFile(L"DX11 Framework.fx", "ParralaxPS", "ps_5_0", &pPSBlob);
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pParralaxOcclusionPixelShader);
+
+	//Compile the block colour pixel shader
+	hr = CompileShaderFromFile(L"DX11 Framework.fx", "BlockColourPS", "ps_5_0", &pPSBlob);
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pBlockColourPixelShader);
 
 	
 
@@ -322,19 +327,19 @@ HRESULT Application::InitShadersAndInputLayout()
 	pVSBlob->Release();
 
 	//Compile the PassThrough vertex shader
-	hr = CompileShaderFromFile(L"PostProcess.fx", "PassThroughVS", "vs_4_0", &pVSBlob);
+	hr = CompileShaderFromFile(L"PostProcess.fx", "PassThroughVS", "vs_5_0", &pVSBlob);
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pPassThroughVertexShader);
 
 	//Compile the No Post Process pixel shader
-	hr = CompileShaderFromFile(L"PostProcess.fx", "NoPostProcessPS", "ps_4_0", &pPSBlob);
+	hr = CompileShaderFromFile(L"PostProcess.fx", "NoPostProcessPS", "ps_5_0", &pPSBlob);
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pNoPostProcessPixelShader);
 
 	//Compile the Gaussian blur pixel shader
-	hr = CompileShaderFromFile(L"PostProcess.fx", "GaussianBlurPS", "ps_4_0", &pPSBlob);
+	hr = CompileShaderFromFile(L"PostProcess.fx", "GaussianBlurPS", "ps_5_0", &pPSBlob);
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pGaussianBlurPixelShader);
 	
 	//Compile the bloom pixel shader
-	hr = CompileShaderFromFile(L"PostProcess.fx", "BloomPS", "ps_4_0", &pPSBlob);
+	hr = CompileShaderFromFile(L"PostProcess.fx", "BloomPS", "ps_5_0", &pPSBlob);
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pBloomPixelShader);
 
 	 // Define the input layout
@@ -352,6 +357,10 @@ HRESULT Application::InitShadersAndInputLayout()
 
 	if (FAILED(hr))
         return hr;
+
+	ID3DBlob * pHSBlob = nullptr;
+	hr = CompileShaderFromFile(L"Tesselation.fx", "MainHS", "hs_5_0", &pHSBlob);
+	hr = _pd3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &_pHullShader);
 
     // Set the input layout
     _pImmediateContext->IASetInputLayout(_pVertexLayout);
@@ -865,6 +874,17 @@ void Application::Draw()
 			cb.HasTexture = 1.0f;
 			break;
 		case FX_BLOCK_COLOUR:
+			
+
+			break;
+		case FX_WIREFRAME:
+			_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
+			_pImmediateContext->HSSetShader(_pHullShader, nullptr, 0);
+			_pImmediateContext->RSSetState(RSWireFrame);
+			_pImmediateContext->VSSetShader(_pNormalVertexShader, nullptr, 0);
+			_pImmediateContext->PSSetShader(_pBlockColourPixelShader, nullptr, 0);
+			
+			_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			break;
 		case FX_SKY:
 			break;
@@ -877,6 +897,7 @@ void Application::Draw()
 
 		// Draw object
 		gameObject->Draw(_pImmediateContext);
+		_pImmediateContext->RSSetState(ViewMode());
 	}
 
 	//Switch to rendering to the back buffer
