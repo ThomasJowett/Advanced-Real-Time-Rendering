@@ -14,7 +14,7 @@ Mesh::Mesh(IndexedModel model, ID3D11Device* d3dDevice)
 	ZeroMemory(&InitData, sizeof(InitData));
 	InitData.pSysMem = &model.Vertices[0];
 
-	d3dDevice->CreateBuffer(&bd, &InitData, &vertexBuffer);
+	d3dDevice->CreateBuffer(&bd, &InitData, &_vertexBuffer);
 
 	//Index Buffer
 	ZeroMemory(&bd, sizeof(bd));
@@ -25,10 +25,16 @@ Mesh::Mesh(IndexedModel model, ID3D11Device* d3dDevice)
 
 	ZeroMemory(&InitData, sizeof(InitData));
 	InitData.pSysMem = &model.Indices[0];
-	d3dDevice->CreateBuffer(&bd, &InitData, &indexBuffer);
+	d3dDevice->CreateBuffer(&bd, &InitData, &_indexBuffer);
 
-	numberOfIndices = model.Indices.size();
+	_numberOfIndices = model.Indices.size();
 
-	vertexBufferOffset = 0;
-	vertexBufferStride = sizeof(SimpleVertex);
+	_vertexBufferOffset = 0;
+	_vertexBufferStride = sizeof(SimpleVertex);
+}
+
+Mesh::~Mesh()
+{
+	//if(_vertexBuffer) _vertexBuffer->Release();
+	//if(_indexBuffer) _indexBuffer->Release();
 }

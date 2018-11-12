@@ -7,43 +7,17 @@ Texture2D vingette : register(t1);
 
 SamplerState samLinear : register(s0);
 
+static const int MAX_SAMPLES = 16;
+
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
 
-struct SurfaceInfo
+cbuffer Parameters : register(b0)
 {
-	float4 AmbientMtrl;
-	float4 DiffuseMtrl;
-	float4 SpecularMtrl;
+	float4 sampleOffsets[MAX_SAMPLES];
+	float4 sampleWeights[MAX_SAMPLES];
 };
-
-struct Light
-{
-	float4 AmbientLight;
-	float4 DiffuseLight;
-	float4 SpecularLight;
-
-	float SpecularPower;
-	float3 LightPosW;
-};
-
-cbuffer ConstantBuffer : register(b0)
-{
-	matrix World;
-	matrix View;
-	matrix Projection;
-
-	SurfaceInfo surface;
-	Light light;
-
-	float3 EyePosW;
-	float HasTexture;
-
-	float HeightMapScale;
-	int MaxSamples;
-	int MinSamples;
-}
 
 struct VS_INPUT
 {
@@ -91,18 +65,22 @@ float4 NoPostProcessPS(VS_OUTPUT input) : SV_Target
 //--------------------------------------------------------------------------------------
 float4 GaussianBlurPS(VS_OUTPUT input) : SV_Target
 {
-	float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
+	float4 finalColour = 0.0f;
 
-	float2 position = { 0.0f,0.01f };
-	textureColour += txDiffuse.Sample(samLinear, input.Tex + position);
-	float2 position2 = { 0.0f, -0.01f };
-	textureColour += txDiffuse.Sample(samLinear, input.Tex + position2);
-	float2 position3 = { 0.001f, 0.0f };
-	textureColour += txDiffuse.Sample(samLinear, input.Tex + position3);
-	float2 position4 = { -0.001f, 0.0f };
-	textureColour += txDiffuse.Sample(samLinear, input.Tex + position4);
+	for (int i = 0; i < 13; i++)
+	{
+		finalColour += sampleWeights[i] * txDiffuse.Sample(samLinear, input.Tex + sampleOffsets[i].xy);
+	}
 
-	textureColour /= 5;
+	return finalColour;
+}
 
-	return textureColour;
+//--------------------------------------------------------------------------------------
+// Bloom Pixel Shader
+//--------------------------------------------------------------------------------------
+float4 BloomPS(VS_OUTPUT input) : SV_Target0
+{
+	// Uses sampleWeights[0] as 'bloom threshold'
+	float4 c = txDiffuse.Sample(samLinear, input.Tex);
+	return saturate((c - sampleWeights[0]) / (1 - sampleWeights[0]));
 }

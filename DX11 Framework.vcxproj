@@ -379,6 +379,7 @@
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="ObJLoader.cpp" />
+    <ClCompile Include="PostProcess.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="DX11 Framework.fx">
@@ -400,6 +401,7 @@
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="ObJLoader.h" />
+    <ClInclude Include="PostProcess.h" />
     <ClInclude Include="Quaternion.h" />
     <CLInclude Include="resource.h" />
     <ClInclude Include="Transform.h" />

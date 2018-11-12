@@ -11,13 +11,14 @@ using namespace DirectX;
 class Mesh
 {
 public:
-	ID3D11Buffer * vertexBuffer;
-	ID3D11Buffer * indexBuffer;
-	int numberOfIndices;
+	ID3D11Buffer * _vertexBuffer;
+	ID3D11Buffer * _indexBuffer;
+	int _numberOfIndices;
 
-	UINT vertexBufferStride;
-	UINT vertexBufferOffset;
+	UINT _vertexBufferStride;
+	UINT _vertexBufferOffset;
 
 	Mesh() {};
 	Mesh(IndexedModel model, ID3D11Device* d3dDevice);
+	~Mesh();
 };

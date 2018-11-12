@@ -460,3 +460,21 @@ IndexedModel GeometryGenerator::CreateCylinder(float bottomRadius, float topRadi
 
 	return returnGeometry;
 }
+
+IndexedModel GeometryGenerator::CreateTorus(float diameter, float thickness, int segments, int sides)
+{
+	if (segments < 3)
+		segments = 3;
+	if (sides < 3)
+		sides = 3;
+
+	for (int i = 0; i <= segments; i++)
+	{
+		float u = float(i) / segments;
+
+		float outerAngle = i * XM_2PI / segments - XM_PIDIV2;
+
+
+	}
+	return IndexedModel();
+}

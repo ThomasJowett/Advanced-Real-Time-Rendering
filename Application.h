@@ -49,14 +49,10 @@ private:
 	ID3D11PixelShader*      _pParralaxOcclusionPixelShader;
 	ID3D11VertexShader*     _pPassThroughVertexShader;
 	ID3D11PixelShader*      _pNoPostProcessPixelShader;
+	ID3D11PixelShader*      _pGaussianBlurPixelShader;
+	ID3D11PixelShader*      _pBloomPixelShader;
 	ID3D11InputLayout*      _pVertexLayout;
 	ID3D11InputLayout*      _pPostProcessLayout;
-
-	ID3D11Buffer*           _pVertexBuffer;
-	ID3D11Buffer*           _pIndexBuffer;
-
-	ID3D11Buffer*           _pPlaneVertexBuffer;
-	ID3D11Buffer*           _pPlaneIndexBuffer;
 
 	Mesh*					_fullscreenQuad;
 
@@ -114,8 +110,6 @@ private:
 	void Cleanup();
 	HRESULT CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
 	HRESULT InitShadersAndInputLayout();
-	HRESULT InitVertexBuffer();
-	HRESULT InitIndexBuffer();
 
 	void moveForward(int objectNumber);
 	void Rotate(int objectNumber);

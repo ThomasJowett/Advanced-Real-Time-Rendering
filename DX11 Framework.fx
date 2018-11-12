@@ -229,9 +229,6 @@ float4 SimpleParralaxPS(VS_OUTPUT_SIMPLE_PARRALAX input) : SV_Target
 	float height = txHeight.Sample(samLinear, input.Tex).r;
 	height = (height * HeightMapScale * 2.0f) - HeightMapScale;
 
-	float4 tempColour = { input.Tex + (offsetDir * height),0.5f, 1.0f };
-	//return tempColour;
-
 	float2 FinalCoords = input.Tex + (offsetDir * height);
 	float4 textureColour = txDiffuse.Sample(samLinear, FinalCoords);
 	float4 bumpMap = txNormal.Sample(samLinear, FinalCoords);

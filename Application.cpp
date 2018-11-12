@@ -1,6 +1,7 @@
 #include "Application.h"
 #include "GeometryGenerator.h"
 #include "ObJLoader.h"
+#include "PostProcess.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -68,8 +69,6 @@ Application::Application()
 	_pNormalVertexShader = nullptr;
 	_pNormalPixelShader = nullptr;
 	_pVertexLayout = nullptr;
-	_pVertexBuffer = nullptr;
-	_pIndexBuffer = nullptr;
 	_pConstantBuffer = nullptr;
 
 	DSLessEqual = nullptr;
@@ -176,7 +175,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	Mesh planeGeometry(GeometryGenerator::CreateGrid(25.0f, 25.0f, 50, 50, 2, 2), _pd3dDevice);
 
-	Mesh sphereGeometry(GeometryGenerator::CreateSphere(1.0f, 20.0f, 20.0f), _pd3dDevice);
+	Mesh sphereGeometry(GeometryGenerator::CreateSphere(0.5f, 20.0f, 20.0f), _pd3dDevice);
+
+	Mesh cylinderGeometry(GeometryGenerator::CreateCylinder(0.5f,0.5f,1.0f, 20, 2), _pd3dDevice);
 
 	Mesh SpaceManGeometry(OBJLoader::Load("Resources\\SpaceMan.obj", true), _pd3dDevice);
 
@@ -246,7 +247,18 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	{
 		position = Vector3D(-4.0f + (i * 2.0f), 0.5f, 10.0f);
 		transform = new Transform(position, Vector3D(0.0f, 0.0f, 0.0f), Vector3D(1.0f, 1.0f, 1.0f));
-		gameObject = new GameObject("Cube " + i, transform, cubeGeometry, shinyMaterial);
+		if (i == 1)
+		{
+			gameObject = new GameObject("Cube " + i, transform, cylinderGeometry, shinyMaterial);
+		}
+		else if (i == 2)
+		{
+			gameObject = new GameObject("Cube " + i, transform, sphereGeometry, shinyMaterial);
+		}
+		else
+		{
+			gameObject = new GameObject("Cube " + i, transform, cubeGeometry, shinyMaterial);
+		}
 		gameObject->SetTextureRV(_pDiffuseStoneTextureRV,TX_DIFFUSE);
 		gameObject->SetTextureRV(_pNormalStoneTextureRV, TX_NORMAL);
 
@@ -259,103 +271,36 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 HRESULT Application::InitShadersAndInputLayout()
 {
 	HRESULT hr;
+	ID3DBlob* pVSBlob = nullptr;
+	ID3DBlob* pPSBlob = nullptr;
 
     // Compile the normal map vertex shader
-    ID3DBlob* pVSBlob = nullptr;
     hr = CompileShaderFromFile(L"DX11 Framework.fx", "NormalVS", "vs_4_0", &pVSBlob);
-
-    if (FAILED(hr))
-    {
-        MessageBox(nullptr,
-                   L"The FX file cannot compile normal vertex shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-        return hr;
-    }
-
-	// Create the normal map vertex shader
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pNormalVertexShader);
 
-	if (FAILED(hr))
-	{	
-		pVSBlob->Release();
-        return hr;
-	}
-
 	// Compile the normal map pixel shader
-	ID3DBlob* pPSBlob = nullptr;
     hr = CompileShaderFromFile(L"DX11 Framework.fx", "NormalPS", "ps_4_0", &pPSBlob);
-
-    if (FAILED(hr))
-    {
-        MessageBox(nullptr,
-                   L"The FX file cannot compile normal pixel shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-        return hr;
-    }
-
-	// Create the pixel shader
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pNormalPixelShader);
 	
-	//Compile the Parralax map vertex shader
+	//Compile the simple Parralax map vertex shader
 	hr = CompileShaderFromFile(L"DX11 Framework.fx", "SimpleParralaxVS", "vs_4_0", &pVSBlob);
-
-	if (FAILED(hr))
-	{
-		MessageBox(nullptr,
-			L"The FX file cannot compile parralax vertex shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-		return hr;
-	}
-
-	// Create the Parralax map vertex shader
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pParralaxVertexShader);
 
-	//Compile the Parralax map pixel shader
+	//Compile the simple Parralax map pixel shader
 	hr = CompileShaderFromFile(L"DX11 Framework.fx", "SimpleParralaxPS", "ps_4_0", &pPSBlob);
-
-	if (FAILED(hr))
-	{
-		MessageBox(nullptr,
-			L"The FX file cannot compile simple parralax pixel shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-		return hr;
-	}
-
-	// Create the pixel shader
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pParralaxPixelShader);
 
 	//Compile the Parralax map vertex shader
 	hr = CompileShaderFromFile(L"DX11 Framework.fx", "ParralaxVS", "vs_4_0", &pVSBlob);
-
-	if (FAILED(hr))
-	{
-		MessageBox(nullptr,
-			L"The FX file cannot compile simple parralax vertex shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-		return hr;
-	}
-
-	// Create the Parralax map vertex shader
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pParralaxOcclusionVertexShader);
 
 	//Compile the Parralax map pixel shader
 	hr = CompileShaderFromFile(L"DX11 Framework.fx", "ParralaxPS", "ps_4_0", &pPSBlob);
-
-	if (FAILED(hr))
-	{
-		MessageBox(nullptr,
-			L"The FX file cannot compile parralax pixel shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-		return hr;
-	}
-
-	// Create the pixel shader
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pParralaxOcclusionPixelShader);
 
 	
 
 	pPSBlob->Release();
-
-	if (FAILED(hr))
-	{
-		MessageBox(nullptr,
-			L"The FX file cannot compile parralax vertex shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-		return hr;
-	}
 
     if (FAILED(hr))
         return hr;
@@ -378,29 +323,19 @@ HRESULT Application::InitShadersAndInputLayout()
 
 	//Compile the PassThrough vertex shader
 	hr = CompileShaderFromFile(L"PostProcess.fx", "PassThroughVS", "vs_4_0", &pVSBlob);
-	
-	if (FAILED(hr))
-	{
-		MessageBox(nullptr,
-			L"The FX file cannot compile Pass Through vertex shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-		return hr;
-	}
-	
-	// Create the Pass Through vertex shader
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pPassThroughVertexShader);
 
 	//Compile the No Post Process pixel shader
 	hr = CompileShaderFromFile(L"PostProcess.fx", "NoPostProcessPS", "ps_4_0", &pPSBlob);
-	
-	if (FAILED(hr))
-	{
-		MessageBox(nullptr,
-			L"The FX file cannot compile PostProcess pixel shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-		return hr;
-	}
-	
-	// Create the PostProcess pixel shader
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pNoPostProcessPixelShader);
+
+	//Compile the Gaussian blur pixel shader
+	hr = CompileShaderFromFile(L"PostProcess.fx", "GaussianBlurPS", "ps_4_0", &pPSBlob);
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pGaussianBlurPixelShader);
+	
+	//Compile the bloom pixel shader
+	hr = CompileShaderFromFile(L"PostProcess.fx", "BloomPS", "ps_4_0", &pPSBlob);
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pBloomPixelShader);
 
 	 // Define the input layout
 	D3D11_INPUT_ELEMENT_DESC layoutPostProcess[] =
@@ -433,151 +368,6 @@ HRESULT Application::InitShadersAndInputLayout()
 	hr = _pd3dDevice->CreateSamplerState(&sampDesc, &_pSamplerLinear);
 
 	return hr;
-}
-
-HRESULT Application::InitVertexBuffer()
-{
-	HRESULT hr;
-
-    // Create vertex buffer
-    SimpleVertex vertices[] =
-    {
-		{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-
-		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-		{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-
-		{ XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-
-		{ XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-
-		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-
-		{ XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-    };
-
-    D3D11_BUFFER_DESC bd;
-	ZeroMemory(&bd, sizeof(bd));
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(SimpleVertex) * 24;
-    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-
-    D3D11_SUBRESOURCE_DATA InitData;
-	ZeroMemory(&InitData, sizeof(InitData));
-    InitData.pSysMem = vertices;
-
-    hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pVertexBuffer);
-
-    if (FAILED(hr))
-        return hr;
-
-	// Create vertex buffer
-	SimpleVertex planeVertices[] =
-	{
-		{ XMFLOAT3(-1.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 5.0f) },
-		{ XMFLOAT3(1.0f, -1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(5.0f, 5.0f) },
-		{ XMFLOAT3(1.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(5.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-	};
-
-	ZeroMemory(&bd, sizeof(bd));
-	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(SimpleVertex) * 4;
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-
-	ZeroMemory(&InitData, sizeof(InitData));
-	InitData.pSysMem = planeVertices;
-
-	hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pPlaneVertexBuffer);
-
-	if (FAILED(hr))
-		return hr;
-
-	return S_OK;
-}
-
-HRESULT Application::InitIndexBuffer()
-{
-	HRESULT hr;
-
-    // Create index buffer
-    WORD indices[] =
-    {
-		3, 1, 0,
-		2, 1, 3,
-
-		6, 4, 5,
-		7, 4, 6,
-
-		11, 9, 8,
-		10, 9, 11,
-
-		14, 12, 13,
-		15, 12, 14,
-
-		19, 17, 16,
-		18, 17, 19,
-
-		22, 20, 21,
-		23, 20, 22
-    };
-
-	D3D11_BUFFER_DESC bd;
-	ZeroMemory(&bd, sizeof(bd));
-
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(WORD) * 36;     
-    bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-
-	D3D11_SUBRESOURCE_DATA InitData;
-	ZeroMemory(&InitData, sizeof(InitData));
-    InitData.pSysMem = indices;
-    hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pIndexBuffer);
-
-    if (FAILED(hr))
-        return hr;
-
-	// Create plane index buffer
-	WORD planeIndices[] =
-	{
-		0, 3, 1,
-		3, 2, 1,
-	};
-
-	ZeroMemory(&bd, sizeof(bd));
-	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(WORD) * 6;
-	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-
-	ZeroMemory(&InitData, sizeof(InitData));
-	InitData.pSysMem = planeIndices;
-	hr = _pd3dDevice->CreateBuffer(&bd, &InitData, &_pPlaneIndexBuffer);
-
-	if (FAILED(hr))
-		return hr;
-
-	return S_OK;
 }
 
 HRESULT Application::InitWindow(HINSTANCE hInstance, int nCmdShow)
@@ -637,6 +427,10 @@ HRESULT Application::CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoin
             OutputDebugStringA((char*)pErrorBlob->GetBufferPointer());
 
         if (pErrorBlob) pErrorBlob->Release();
+
+		MessageBox(nullptr,
+			L"The FX file cannot compile shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return hr;
 
         return hr;
     }
@@ -726,9 +520,6 @@ HRESULT Application::InitDevice()
     _pImmediateContext->RSSetViewports(1, &vp);
 
 	InitShadersAndInputLayout();
-
-	InitVertexBuffer();
-	InitIndexBuffer();
 
     // Set primitive topology
     _pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -860,11 +651,6 @@ void Application::Cleanup()
 	//if (_pGroundTextureRV) _pGroundTextureRV->Release();
 
     if (_pConstantBuffer) _pConstantBuffer->Release();
-
-    if (_pVertexBuffer) _pVertexBuffer->Release();
-    if (_pIndexBuffer) _pIndexBuffer->Release();
-	if (_pPlaneVertexBuffer) _pPlaneVertexBuffer->Release();
-	if (_pPlaneIndexBuffer) _pPlaneIndexBuffer->Release();
 
     if (_pVertexLayout) _pVertexLayout->Release();
     if (_pNormalVertexShader) _pNormalVertexShader->Release();
@@ -1104,12 +890,17 @@ void Application::Draw()
 	_pImmediateContext->PSSetShaderResources(0, 1, &_RTTshaderResourceView);
 	_pImmediateContext->PSSetShaderResources(1, 1, &_pVingetteTextureRV);
 	_pImmediateContext->VSSetShader(_pPassThroughVertexShader, nullptr, 0);
-	_pImmediateContext->PSSetShader(_pNoPostProcessPixelShader, nullptr, 0);
+	//_pImmediateContext->PSSetShader(_pNoPostProcessPixelShader, nullptr, 0);
+	//_pImmediateContext->PSSetShader(_pGaussianBlurPixelShader, nullptr, 0);
+	_pImmediateContext->PSSetShader(_pBloomPixelShader, nullptr, 0);
+
+	//_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &PostProcess::GaussianBlur(5.0f, _renderHeight, _renderWidth), 0, 0);
+	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &PostProcess::Bloom(true, 150.0f, 2.0f, _renderHeight, _renderWidth), 0, 0);
 	
-	_pImmediateContext->IASetVertexBuffers(0, 1, &_fullscreenQuad->vertexBuffer, &_fullscreenQuad->vertexBufferStride, &_fullscreenQuad->vertexBufferOffset);
-	_pImmediateContext->IASetIndexBuffer(_fullscreenQuad->indexBuffer, DXGI_FORMAT_R16_UINT, 0);
+	_pImmediateContext->IASetVertexBuffers(0, 1, &_fullscreenQuad->_vertexBuffer, &_fullscreenQuad->_vertexBufferStride, &_fullscreenQuad->_vertexBufferOffset);
+	_pImmediateContext->IASetIndexBuffer(_fullscreenQuad->_indexBuffer, DXGI_FORMAT_R16_UINT, 0);
 	
-	_pImmediateContext->DrawIndexed(_fullscreenQuad->numberOfIndices, 0, 0);
+	_pImmediateContext->DrawIndexed(_fullscreenQuad->_numberOfIndices, 0, 0);
 
     //
     // Present our back buffer to our front buffer

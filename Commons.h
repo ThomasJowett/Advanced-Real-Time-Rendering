@@ -47,7 +47,7 @@ struct Light
 	XMFLOAT3 LightPosW;
 };
 
-struct ConstantBuffer
+__declspec(align(16)) struct ConstantBuffer
 {
 	XMMATRIX World;
 	XMMATRIX View;
@@ -63,6 +63,14 @@ struct ConstantBuffer
 	float HeightMapScale;
 	int MaxSamples;
 	int MinSamples;
+};
+
+const int c_MaxSamples = 16;
+
+__declspec(align(16)) struct PostProcessConstantBuffer
+{
+	XMVECTOR sampleOffsets[c_MaxSamples];
+	XMVECTOR sampleWeights[c_MaxSamples];
 };
 
 struct IndexedModel
