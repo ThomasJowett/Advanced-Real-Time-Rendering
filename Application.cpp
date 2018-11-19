@@ -2,6 +2,7 @@
 #include "GeometryGenerator.h"
 #include "ObJLoader.h"
 #include "PostProcess.h"
+#include <iostream>
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -366,8 +367,12 @@ HRESULT Application::InitShadersAndInputLayout()
         return hr;
 
 	ID3DBlob * pHSBlob = nullptr;
-	//hr = CompileShaderFromFile(L"Tesselation.fx", "MainHS", "hs_5_0", &pHSBlob);
-	//hr = _pd3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &_pHullShader);
+	hr = CompileShaderFromFile(L"Tesselation.fx", "MainHS", "hs_5_0", &pHSBlob);
+	hr = _pd3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &_pHullShader);
+
+	ID3DBlob * pDSBlob = nullptr;
+	hr = CompileShaderFromFile(L"Tesselation.fx", "DSMAIN", "ds_5_0", &pDSBlob);
+	hr = _pd3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &_pDomainShader);
 
     // Set the input layout
     _pImmediateContext->IASetInputLayout(_pVertexLayout);
@@ -887,6 +892,7 @@ void Application::Draw()
 		case FX_WIREFRAME:
 			_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
 			_pImmediateContext->HSSetShader(_pHullShader, nullptr, 0);
+			_pImmediateContext->DSSetShader(_pDomainShader, nullptr, 0);
 			_pImmediateContext->RSSetState(RSWireFrame);
 			_pImmediateContext->VSSetShader(_pNormalVertexShader, nullptr, 0);
 			_pImmediateContext->PSSetShader(_pBlockColourPixelShader, nullptr, 0);

@@ -408,6 +408,7 @@
     <ClInclude Include="PostProcess.h" />
     <ClInclude Include="Quaternion.h" />
     <CLInclude Include="resource.h" />
+    <ClInclude Include="ShadowMapping.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="Vector.h" />
     <ResourceCompile Include="DX11 Framework.rc" />
