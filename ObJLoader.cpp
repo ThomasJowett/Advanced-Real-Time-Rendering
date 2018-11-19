@@ -397,12 +397,5 @@ XMFLOAT3 OBJLoader::CalculateTangent(SimpleVertex v0, SimpleVertex v1, SimpleVer
 
 	XMStoreFloat3(&tangent, vt);
 
-	XMFLOAT3 v3(0, 0, 0);
-	XMVECTOR vertex = XMLoadFloat3(&v3);
-	v3 = XMFLOAT3(0, 0, -3);
-	XMVECTOR eye = XMLoadFloat3(&v3);
-
-	XMVECTOR vtoEye = eye - vertex;
-
 	return tangent;
 }

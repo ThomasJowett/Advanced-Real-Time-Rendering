@@ -16,6 +16,13 @@ struct SimpleVertex
 	SimpleVertex() {};
 	SimpleVertex(XMFLOAT3 position, XMFLOAT3 normal, XMFLOAT3 tangent, XMFLOAT2 uv)
 		:PosL(position), NormL(normal), Tangent(tangent), Tex(uv) {}
+	SimpleVertex(XMVECTOR position, XMVECTOR normal, XMVECTOR tangent, XMVECTOR uv)
+	{
+		XMStoreFloat3(&PosL, position);
+		XMStoreFloat3(&NormL, normal);
+		XMStoreFloat3(&Tangent, tangent);
+		XMStoreFloat2(&Tex, uv);
+	}
 	SimpleVertex(
 		float px, float py, float pz,
 		float nx, float ny, float nz,

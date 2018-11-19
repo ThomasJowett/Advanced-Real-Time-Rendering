@@ -179,6 +179,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	Mesh cylinderGeometry(GeometryGenerator::CreateCylinder(0.5f,0.5f,1.0f, 20, 2), _pd3dDevice);
 
+	Mesh torusGeometry(GeometryGenerator::CreateTorus(0.7f, 0.25f, 15), _pd3dDevice);
+
 	Mesh SpaceManGeometry(OBJLoader::Load("Resources\\SpaceMan.obj", true), _pd3dDevice);
 
 	Mesh GunGeometry(OBJLoader::Load("Resources\\Gun.obj", true), _pd3dDevice);
@@ -215,7 +217,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	_gameObjects.push_back(gameObject);
 
-	transform = new Transform(Vector3D(0.0f, 1.0f, 0.0f), Quaternion(1, 0, 0, 0), Vector3D(1.0f, 1.0f, 1.0f));
+	transform = new Transform(Vector3D(0.0f, 1.0f, 0.0f), Vector3D(XM_PIDIV2, 0, 0), Vector3D(1.0f, 1.0f, 1.0f));
 
 	gameObject = new GameObject("Crate", transform, cubeGeometry, shinyMaterial);
 	gameObject->SetTextureRV(_pDiffuseCrateTextureRV, TX_DIFFUSE);
@@ -254,6 +256,11 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 		else if (i == 2)
 		{
 			gameObject = new GameObject("Sphere " + i, transform, sphereGeometry, shinyMaterial);
+		}
+		else if (i == 3)
+		{
+			transform->_rotation = Vector3D(XM_PIDIV2, 0, 0);
+			gameObject = new GameObject("Torus " + i, transform, torusGeometry, shinyMaterial);
 		}
 		else
 		{
@@ -359,8 +366,8 @@ HRESULT Application::InitShadersAndInputLayout()
         return hr;
 
 	ID3DBlob * pHSBlob = nullptr;
-	hr = CompileShaderFromFile(L"Tesselation.fx", "MainHS", "hs_5_0", &pHSBlob);
-	hr = _pd3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &_pHullShader);
+	//hr = CompileShaderFromFile(L"Tesselation.fx", "MainHS", "hs_5_0", &pHSBlob);
+	//hr = _pd3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &_pHullShader);
 
     // Set the input layout
     _pImmediateContext->IASetInputLayout(_pVertexLayout);
@@ -883,8 +890,6 @@ void Application::Draw()
 			_pImmediateContext->RSSetState(RSWireFrame);
 			_pImmediateContext->VSSetShader(_pNormalVertexShader, nullptr, 0);
 			_pImmediateContext->PSSetShader(_pBlockColourPixelShader, nullptr, 0);
-			
-			_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			break;
 		case FX_SKY:
 			break;
@@ -898,6 +903,7 @@ void Application::Draw()
 		// Draw object
 		gameObject->Draw(_pImmediateContext);
 		_pImmediateContext->RSSetState(ViewMode());
+		_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	}
 
 	//Switch to rendering to the back buffer

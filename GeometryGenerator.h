@@ -13,5 +13,5 @@ namespace GeometryGenerator
 
 	IndexedModel CreateCylinder(float bottomRadius, float topRadius, float height, int sliceCount, int stackCount);
 
-	IndexedModel CreateTorus(float diameter, float thickness, int segments, int sides);
+	IndexedModel CreateTorus(float diameter, float thickness, int segments);
 }

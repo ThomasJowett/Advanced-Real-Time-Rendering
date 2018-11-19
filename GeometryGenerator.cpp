@@ -1,4 +1,5 @@
 #include "GeometryGenerator.h"
+#include "Vector.h"
 
 IndexedModel GeometryGenerator::CreateCube(float width, float height, float depth)
 {
@@ -461,12 +462,14 @@ IndexedModel GeometryGenerator::CreateCylinder(float bottomRadius, float topRadi
 	return returnGeometry;
 }
 
-IndexedModel GeometryGenerator::CreateTorus(float diameter, float thickness, int segments, int sides)
+IndexedModel GeometryGenerator::CreateTorus(float diameter, float thickness, int segments)
 {
 	if (segments < 3)
 		segments = 3;
-	if (sides < 3)
-		sides = 3;
+
+	IndexedModel returnGeometry;
+
+	size_t stride = segments + 1;
 
 	for (int i = 0; i <= segments; i++)
 	{
@@ -474,7 +477,40 @@ IndexedModel GeometryGenerator::CreateTorus(float diameter, float thickness, int
 
 		float outerAngle = i * XM_2PI / segments - XM_PIDIV2;
 
+		XMMATRIX transform = XMMatrixTranslation(diameter / 2, 0, 0) * XMMatrixRotationY(outerAngle);
 
+		for (int j = 0; j <= segments; j++)
+		{
+			float v = 1 - float(j) / segments;
+
+			float innerAngle = j * XM_2PI / segments + XM_PI;
+			float dx, dy;
+
+			XMScalarSinCos(&dy, &dx, innerAngle);
+
+			XMVECTOR normal = XMVectorSet(dx, dy, 0, 0);
+			XMVECTOR tangent = XMVectorSet(dy, -dx, 0, 0);
+			XMVECTOR position = XMVectorScale(normal, thickness / 2);
+			XMVECTOR texCoord = XMVectorSet(u, v, 0, 0);
+
+			position = XMVector3Transform(position, transform);
+			normal = XMVector3TransformNormal(normal, transform);
+			tangent = XMVector3TransformNormal(tangent, transform);
+
+			returnGeometry.Vertices.push_back(SimpleVertex(position,normal,tangent, texCoord));
+
+			// And create indices for two triangles.
+			size_t nextI = (i + 1) % stride;
+			size_t nextJ = (j + 1) % stride;
+			
+			returnGeometry.Indices.push_back(nextI * stride + j);
+			returnGeometry.Indices.push_back(i * stride + nextJ);
+			returnGeometry.Indices.push_back(i * stride + j);
+
+			returnGeometry.Indices.push_back(nextI * stride + j);
+			returnGeometry.Indices.push_back(nextI * stride + nextJ);
+			returnGeometry.Indices.push_back(i * stride + nextJ);
+		}
 	}
-	return IndexedModel();
+	return returnGeometry;
 }
