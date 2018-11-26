@@ -51,7 +51,7 @@ struct Light
 	XMFLOAT4 SpecularLight;
 
 	float SpecularPower;
-	XMFLOAT3 LightPosW;
+	XMFLOAT3 Direction;
 };
 
 __declspec(align(16)) struct ConstantBuffer
@@ -59,6 +59,7 @@ __declspec(align(16)) struct ConstantBuffer
 	XMMATRIX World;
 	XMMATRIX View;
 	XMMATRIX Projection;
+	XMMATRIX ShadowTransform;
 
 	SurfaceInfo surface;
 
@@ -78,6 +79,13 @@ __declspec(align(16)) struct PostProcessConstantBuffer
 {
 	XMVECTOR sampleOffsets[c_MaxSamples];
 	XMVECTOR sampleWeights[c_MaxSamples];
+};
+
+__declspec(align(16)) struct ShadowMapConstantBuffer
+{
+	XMMATRIX World;
+	XMMATRIX View;
+	XMMATRIX Projection;
 };
 
 struct IndexedModel

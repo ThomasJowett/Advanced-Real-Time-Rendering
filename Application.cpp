@@ -58,6 +58,7 @@ bool Application::HandleKeyboard(MSG msg)
 }
 
 Application::Application()
+	:_pShadowMap(0)
 {
 	_hInst = nullptr;
 	_hWnd = nullptr;
@@ -109,6 +110,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	ID3D11ShaderResourceView * _pNormalSpaceManTextureRV;
 	ID3D11ShaderResourceView *_pDiffuseSpaceManTextureRV;
 
+	ID3D11ShaderResourceView * _pNormalManTextureRV;
+	ID3D11ShaderResourceView *_pDiffuseManTextureRV;
+
 	ID3D11ShaderResourceView * _pNormalCrateTextureRV;
 	ID3D11ShaderResourceView *_pDiffuseCrateTextureRV;
 	ID3D11ShaderResourceView *_pHeightCrateTextureRV;
@@ -132,6 +136,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Normal.dds", nullptr, &_pNormalSpaceManTextureRV);
 
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Man.dds", nullptr, &_pDiffuseManTextureRV);
+
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Man_normal.dds", nullptr, &_pNormalManTextureRV);
 	
 
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Earth_Normal.dds", nullptr, &_pNormalEarthTextureRV);
@@ -170,7 +177,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	basicLight.DiffuseLight = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	basicLight.SpecularLight = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
 	basicLight.SpecularPower = 20.0f;
-	basicLight.LightPosW = XMFLOAT3(10.0f, 10.0f, -10.0f);
+	basicLight.Direction = XMFLOAT3(10.0f, 10.0f, -10.0f);
 
 	Mesh cubeGeometry(GeometryGenerator::CreateCube(1.0f, 1.0f,1.0f),_pd3dDevice);
 
@@ -219,13 +226,13 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	_gameObjects.push_back(gameObject);
 
 	transform = new Transform(Vector3D(0.0f, 1.0f, 0.0f), Vector3D(XM_PIDIV2, 0, 0), Vector3D(1.0f, 1.0f, 1.0f));
-
+	
 	gameObject = new GameObject("Crate", transform, cubeGeometry, shinyMaterial);
 	gameObject->SetTextureRV(_pDiffuseCrateTextureRV, TX_DIFFUSE);
 	gameObject->SetTextureRV(_pNormalCrateTextureRV, TX_NORMAL);
 	gameObject->SetTextureRV(_pHeightCrateTextureRV, TX_HEIGHTMAP);
 	gameObject->SetShaderToUse(FX_PARRALAXED);
-
+	
 	_gameObjects.push_back(gameObject);
 
 	transform = new Transform(Vector3D(5.0f, 1.0f, 0.0f), Vector3D(0, XM_PI, 0), Vector3D(0.01f, 0.01f, 0.01f));
@@ -241,6 +248,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	gameObject = new GameObject("Gun", transform, GunGeometry, metal); 
 	gameObject->SetTextureRV(_pDiffuseGunTextureRV, TX_DIFFUSE);
 	gameObject->SetTextureRV(_pNormalGunTextureRV, TX_NORMAL);
+
 
 	_gameObjects.push_back(gameObject);
 
@@ -262,6 +270,12 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 		{
 			transform->_rotation = Vector3D(XM_PIDIV2, 0, 0);
 			gameObject = new GameObject("Torus " + i, transform, torusGeometry, shinyMaterial);
+			gameObject->SetShaderToUse(FX_BLOCK_COLOUR);
+		}
+		else if (i == 4)
+		{
+			gameObject = new GameObject("Cube Tesselation", transform, cubeGeometry, shinyMaterial);
+			gameObject->SetShaderToUse(FX_DISPLACEMENT);
 		}
 		else
 		{
@@ -311,7 +325,10 @@ HRESULT Application::InitShadersAndInputLayout()
 	hr = CompileShaderFromFile(L"DX11 Framework.fx", "BlockColourPS", "ps_5_0", &pPSBlob);
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pBlockColourPixelShader);
 
-	
+	//Compile the Parralax map vertex shader
+	hr = CompileShaderFromFile(L"ShadowMap.fx", "ShadowMapVS", "vs_5_0", &pVSBlob);
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pShadowMapVertexShader);
+
 
 	pPSBlob->Release();
 
@@ -369,10 +386,19 @@ HRESULT Application::InitShadersAndInputLayout()
 	ID3DBlob * pHSBlob = nullptr;
 	hr = CompileShaderFromFile(L"Tesselation.fx", "MainHS", "hs_5_0", &pHSBlob);
 	hr = _pd3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &_pHullShader);
-
+	
 	ID3DBlob * pDSBlob = nullptr;
 	hr = CompileShaderFromFile(L"Tesselation.fx", "DSMAIN", "ds_5_0", &pDSBlob);
 	hr = _pd3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &_pDomainShader);
+
+	hr = CompileShaderFromFile(L"Tesselation.fx", "DisplacementDS", "ds_5_0", &pDSBlob);
+	hr = _pd3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &_pDisplacementDomainShader);
+
+	hr = CompileShaderFromFile(L"Tesselation.fx", "TesselationVS", "vs_5_0", &pVSBlob);
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pTesselationVertexShader);
+
+	hr = CompileShaderFromFile(L"Tesselation.fx", "TesselationPS", "ps_5_0", &pPSBlob);
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pTesselationPixelShader);
 
     // Set the input layout
     _pImmediateContext->IASetInputLayout(_pVertexLayout);
@@ -387,6 +413,14 @@ HRESULT Application::InitShadersAndInputLayout()
 	sampDesc.MinLOD = 0;
 	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
 	hr = _pd3dDevice->CreateSamplerState(&sampDesc, &_pSamplerLinear);
+
+	ZeroMemory(&sampDesc, sizeof(sampDesc));
+	sampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT;
+	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+	sampDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+	hr = _pd3dDevice->CreateSamplerState(&sampDesc, &_pSamplerShadow);
 
 	return hr;
 }
@@ -531,14 +565,13 @@ HRESULT Application::InitDevice()
         return hr;
 
     // Setup the viewport
-    D3D11_VIEWPORT vp;
-    vp.Width = (FLOAT)_renderWidth;
-    vp.Height = (FLOAT)_renderHeight;
-    vp.MinDepth = 0.0f;
-    vp.MaxDepth = 1.0f;
-    vp.TopLeftX = 0;
-    vp.TopLeftY = 0;
-    _pImmediateContext->RSSetViewports(1, &vp);
+    _vp.Width = (FLOAT)_renderWidth;
+    _vp.Height = (FLOAT)_renderHeight;
+    _vp.MinDepth = 0.0f;
+    _vp.MaxDepth = 1.0f;
+    _vp.TopLeftX = 0;
+    _vp.TopLeftY = 0;
+    _pImmediateContext->RSSetViewports(1, &_vp);
 
 	InitShadersAndInputLayout();
 
@@ -659,6 +692,9 @@ HRESULT Application::InitDevice()
 	cmdesc.FrontCounterClockwise = false;
 	hr = _pd3dDevice->CreateRasterizerState(&cmdesc, &CWcullMode);
 
+	//Create the shadow map
+	_pShadowMap = new ShadowMap(_pd3dDevice, _shadowMapWidth, _shadowMapHeight);
+
     return S_OK;
 }
 
@@ -666,6 +702,7 @@ void Application::Cleanup()
 {
     if (_pImmediateContext) _pImmediateContext->ClearState();
 	if (_pSamplerLinear) _pSamplerLinear->Release();
+	if (_pSamplerShadow) _pSamplerShadow->Release();
 
 	//if (_pTextureRV) _pTextureRV->Release();
 
@@ -742,6 +779,40 @@ ID3D11RasterizerState * Application::ViewMode()
 	return(_pCurrentState);
 }
 
+void Application::DrawSceneToShadowMap()
+{
+	XMMATRIX view = XMLoadFloat4x4(&_pShadowMap->GetView());
+	XMMATRIX projection = XMLoadFloat4x4(&_pShadowMap->GetProjection());
+
+	_pImmediateContext->IASetInputLayout(_pVertexLayout);
+
+	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
+
+	ShadowMapConstantBuffer cb;
+
+	cb.View = XMMatrixTranspose(view);
+	cb.Projection = XMMatrixTranspose(projection);
+
+	_pImmediateContext->VSSetShader(_pShadowMapVertexShader, nullptr, 0);
+	_pImmediateContext->PSSetShader(nullptr, nullptr, 0);
+	_pImmediateContext->HSSetShader(nullptr, nullptr, 0);
+	_pImmediateContext->DSSetShader(nullptr, nullptr, 0);
+
+	_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	for (auto gameObject : _gameObjects)
+	{
+		cb.World = XMMatrixTranspose(gameObject->GetTransform()->GetWorldMatrix());
+
+		// Update constant buffer
+		_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+		//Draw Object
+		gameObject->Draw(_pImmediateContext);
+	}
+}
+
 void Application::Update(float deltaTime)
 {
 	// Move gameobject
@@ -753,6 +824,7 @@ void Application::Update(float deltaTime)
 	if (GetAsyncKeyState('2'))
 	{
 		Rotate(1);
+		Rotate(3);
 	}
 
 	if (GetAsyncKeyState('8'))
@@ -786,11 +858,24 @@ void Application::Update(float deltaTime)
 
 	counter+= deltaTime;
 
-	basicLight.LightPosW.x = sin(counter)*10;
+	//basicLight.Direction.x = sin(counter)*10;
+
+	_pShadowMap->BuildShadowTransforms(basicLight);
 }
 
 void Application::Draw()
 {
+	//bind the shadow map render target
+	_pShadowMap->BindDsvAndSetNullRenderTarget(_pImmediateContext);
+
+	DrawSceneToShadowMap();
+
+	_pImmediateContext->RSSetViewports(1, &_vp);
+
+	//create a null texture
+	ID3D11ShaderResourceView* null[] = { nullptr, nullptr };
+	_pImmediateContext->PSSetShaderResources(3, 2, null);
+
 	//Set the render target
 	_pImmediateContext->OMSetRenderTargets(1, &_RTTRenderTargetView, _depthStencilView);
 
@@ -813,6 +898,8 @@ void Application::Draw()
 	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
+	_pImmediateContext->PSSetSamplers(1, 1, &_pSamplerShadow);
+	_pImmediateContext->DSSetSamplers(0, 1, &_pSamplerLinear);
 
     ConstantBuffer cb;
 
@@ -821,9 +908,11 @@ void Application::Draw()
 
 	XMMATRIX view = XMLoadFloat4x4(&viewAsFloats);
 	XMMATRIX projection = XMLoadFloat4x4(&projectionAsFloats);
+	XMMATRIX shadowTransform = XMLoadFloat4x4(&_pShadowMap->GetTransform());
 
 	cb.View = XMMatrixTranspose(view);
 	cb.Projection = XMMatrixTranspose(projection);
+	cb.ShadowTransform = XMMatrixTranspose(shadowTransform);
 	
 	cb.light = basicLight;
 	cb.EyePosW = _camera->GetPosition();
@@ -831,6 +920,11 @@ void Application::Draw()
 	cb.HeightMapScale = 0.01f;
 	cb.MaxSamples = 1000;
 	cb.MinSamples = 1;
+
+	ID3D11ShaderResourceView * textureRV;
+
+	textureRV = _pShadowMap->GetShaderResourceView();
+	_pImmediateContext->PSSetShaderResources(3, 1, &textureRV);
 
 	// Render all scene objects
 	for (auto gameObject : _gameObjects)
@@ -845,13 +939,15 @@ void Application::Draw()
 
 		// Set world matrix
 		cb.World = XMMatrixTranspose(gameObject->GetTransform()->GetWorldMatrix());
-		ID3D11ShaderResourceView * textureRV;
+		
 
 		switch (gameObject->GetShaderToUse())
 		{
 		case FX_NORMAL:
 			_pImmediateContext->VSSetShader(_pNormalVertexShader, nullptr, 0);
 			_pImmediateContext->PSSetShader(_pNormalPixelShader, nullptr, 0);
+			_pImmediateContext->HSSetShader(nullptr, nullptr, 0);
+			_pImmediateContext->DSSetShader(nullptr, nullptr, 0);
 
 			textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
 			_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
@@ -863,6 +959,8 @@ void Application::Draw()
 			cb.HeightMapScale = heightMapScale;
 			_pImmediateContext->VSSetShader(_pParralaxVertexShader, nullptr, 0);
 			_pImmediateContext->PSSetShader(_pParralaxPixelShader, nullptr, 0);
+			_pImmediateContext->HSSetShader(nullptr, nullptr, 0);
+			_pImmediateContext->DSSetShader(nullptr, nullptr, 0);
 
 			textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
 			_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
@@ -876,6 +974,8 @@ void Application::Draw()
 			cb.HeightMapScale = heightMapScale;
 			_pImmediateContext->VSSetShader(_pParralaxOcclusionVertexShader, nullptr, 0);
 			_pImmediateContext->PSSetShader(_pParralaxOcclusionPixelShader, nullptr, 0);
+			_pImmediateContext->HSSetShader(nullptr, nullptr, 0);
+			_pImmediateContext->DSSetShader(nullptr, nullptr, 0);
 
 			textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
 			_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
@@ -886,7 +986,9 @@ void Application::Draw()
 			cb.HasTexture = 1.0f;
 			break;
 		case FX_BLOCK_COLOUR:
-			
+			_pImmediateContext->VSSetShader(_pNormalVertexShader, nullptr, 0);
+			_pImmediateContext->PSSetShader(_pBlockColourPixelShader, nullptr, 0);
+			//_pImmediateContext->PSSetShader(_pTesselationPixelShader, nullptr, 0);
 
 			break;
 		case FX_WIREFRAME:
@@ -894,8 +996,21 @@ void Application::Draw()
 			_pImmediateContext->HSSetShader(_pHullShader, nullptr, 0);
 			_pImmediateContext->DSSetShader(_pDomainShader, nullptr, 0);
 			_pImmediateContext->RSSetState(RSWireFrame);
-			_pImmediateContext->VSSetShader(_pNormalVertexShader, nullptr, 0);
-			_pImmediateContext->PSSetShader(_pBlockColourPixelShader, nullptr, 0);
+			_pImmediateContext->VSSetShader(_pTesselationVertexShader, nullptr, 0);
+			_pImmediateContext->PSSetShader(_pTesselationPixelShader, nullptr, 0);
+			break;
+		case FX_DISPLACEMENT:
+			_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
+			_pImmediateContext->HSSetShader(_pHullShader, nullptr, 0);
+			_pImmediateContext->DSSetShader(_pDisplacementDomainShader, nullptr, 0);
+			_pImmediateContext->VSSetShader(_pTesselationVertexShader, nullptr, 0);
+			_pImmediateContext->PSSetShader(_pTesselationPixelShader, nullptr, 0);
+			textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
+			_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
+			textureRV = gameObject->GetTextureRV(TX_NORMAL);
+			_pImmediateContext->PSSetShaderResources(1, 1, &textureRV);
+			textureRV = gameObject->GetTextureRV(TX_HEIGHTMAP);
+			_pImmediateContext->PSSetShaderResources(2, 1, &textureRV);
 			break;
 		case FX_SKY:
 			break;
@@ -912,6 +1027,10 @@ void Application::Draw()
 		_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	}
 
+	
+	_pImmediateContext->PSSetShaderResources(0, 2, null);
+	_pImmediateContext->PSSetShaderResources(3, 2, null);
+
 	//Switch to rendering to the back buffer
 	_pImmediateContext->RSSetState(RSCull);
 	_pImmediateContext->OMSetRenderTargets(1, &_pRenderTargetView, nullptr);
@@ -923,9 +1042,11 @@ void Application::Draw()
 	_pImmediateContext->PSSetShaderResources(0, 1, &_RTTshaderResourceView);
 	_pImmediateContext->PSSetShaderResources(1, 1, &_pVingetteTextureRV);
 	_pImmediateContext->VSSetShader(_pPassThroughVertexShader, nullptr, 0);
-	//_pImmediateContext->PSSetShader(_pNoPostProcessPixelShader, nullptr, 0);
+	_pImmediateContext->PSSetShader(_pNoPostProcessPixelShader, nullptr, 0);
+	_pImmediateContext->HSSetShader(nullptr, nullptr, 0);
+	_pImmediateContext->DSSetShader(nullptr, nullptr, 0);
 	//_pImmediateContext->PSSetShader(_pGaussianBlurPixelShader, nullptr, 0);
-	_pImmediateContext->PSSetShader(_pBloomPixelShader, nullptr, 0);
+	//_pImmediateContext->PSSetShader(_pBloomPixelShader, nullptr, 0);
 
 	//_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &PostProcess::GaussianBlur(5.0f, _renderHeight, _renderWidth), 0, 0);
 	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &PostProcess::Bloom(true, 150.0f, 2.0f, _renderHeight, _renderWidth), 0, 0);
@@ -934,7 +1055,9 @@ void Application::Draw()
 	_pImmediateContext->IASetIndexBuffer(_fullscreenQuad->_indexBuffer, DXGI_FORMAT_R16_UINT, 0);
 	
 	_pImmediateContext->DrawIndexed(_fullscreenQuad->_numberOfIndices, 0, 0);
-
+	
+	//set the null texture
+	_pImmediateContext->PSSetShaderResources(0, 2, null);
     //
     // Present our back buffer to our front buffer
     //

@@ -25,6 +25,7 @@
 #include "VertexTypes.h"
 */
 #include "GameObject.h"
+#include "ShadowMapping.h"
 
 using namespace DirectX;
 
@@ -52,9 +53,14 @@ private:
 	ID3D11PixelShader*      _pNoPostProcessPixelShader;
 	ID3D11PixelShader*      _pGaussianBlurPixelShader;
 	ID3D11PixelShader*      _pBloomPixelShader;
+	ID3D11VertexShader*     _pShadowMapVertexShader;
 
 	ID3D11HullShader*		_pHullShader = nullptr;
 	ID3D11DomainShader*		_pDomainShader = nullptr;
+	ID3D11DomainShader*		_pDisplacementDomainShader = nullptr;
+	ID3D11VertexShader*     _pTesselationVertexShader;
+	ID3D11PixelShader*      _pTesselationPixelShader;
+
 	ID3D11InputLayout*      _pVertexLayout;
 	ID3D11InputLayout*      _pPostProcessLayout;
 
@@ -80,8 +86,11 @@ private:
 	ID3D11ShaderResourceView * _pVingetteTextureRV = nullptr;
 
 	ID3D11SamplerState * _pSamplerLinear = nullptr;
+	ID3D11SamplerState * _pSamplerShadow = nullptr;
 
 	Light basicLight;
+
+	ShadowMap* _pShadowMap;
 
 	vector<GameObject *> _gameObjects;
 
@@ -98,6 +107,11 @@ private:
 	// Render dimensions - Change here to alter screen resolution
 	UINT _renderHeight = 1080;
 	UINT _renderWidth = 1920;
+
+	UINT _shadowMapHeight = 4096;
+	UINT _shadowMapWidth = 4096;
+
+	D3D11_VIEWPORT _vp;
 
 	ID3D11DepthStencilState* DSLessEqual;
 	ID3D11RasterizerState* RSCull;
@@ -119,6 +133,8 @@ private:
 	void Rotate(int objectNumber);
 
 	ID3D11RasterizerState* ViewMode();
+
+	void DrawSceneToShadowMap();
 
 	float counter = 0.01f;
 	float heightMapScale = 0.01f;

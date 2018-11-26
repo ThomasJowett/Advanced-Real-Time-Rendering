@@ -5,8 +5,11 @@
 Texture2D txDiffuse : register(t0);
 Texture2D txNormal : register(t1);
 Texture2D txHeight : register(t2);
+Texture2D txShadow : register(t3);
 
 SamplerState samLinear : register(s0);
+
+SamplerComparisonState samShadow :register(s1);
 
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
@@ -26,7 +29,7 @@ struct Light
 	float4 SpecularLight;
 
 	float SpecularPower;
-	float3 LightPosW;
+	float3 LightDir;
 };
 
 cbuffer ConstantBuffer : register( b0 )
@@ -34,6 +37,7 @@ cbuffer ConstantBuffer : register( b0 )
 	matrix World;
 	matrix View;
 	matrix Projection;
+	matrix ShadowTransform;
 
 	SurfaceInfo surface;
 	Light light;
@@ -62,6 +66,7 @@ struct VS_OUTPUT_NORMAL
 	float4 TangentW : TANGENT;
 	float3 PosW : POSITION;
 	float2 Tex : TEXCOORD0;
+	float4 ShadowPosH : TEXCOORD1;
 };
 
 //--------------------------------------------------------------------------------------
@@ -72,6 +77,7 @@ struct VS_OUTPUT_SIMPLE_PARRALAX
 	float3 LightVecT : POSITION2;
 	float3 EyeVecT : POSITION3;
 	float2 Tex : TEXCOORD0;
+	float4 ShadowPosH : TEXCOORD1;
 };
 
 //--------------------------------------------------------------------------------------
@@ -83,6 +89,7 @@ struct VS_OUTPUT_PARRALAX
 	float3 LightVecT : POSITION2;
 	float3 EyeVecT : POSITION3;
 	float2 Tex : TEXCOORD0;
+	float4 ShadowPosH : TEXCOORD1;
 };
 
 //--------------------------------------------------------------------------------------
@@ -106,6 +113,8 @@ VS_OUTPUT_NORMAL NormalVS(VS_INPUT input)
 	float4 tangentW = mul(float4(input.TangentL, 0.0f), World);
 	output.TangentW = normalize(tangentW);
 
+	output.ShadowPosH = mul(posW, ShadowTransform);
+
     return output;
 }
 
@@ -125,6 +134,48 @@ float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, floa
 	float3 bumpedNormalW = mul(normalMapSample, TBN);
 
 	return bumpedNormalW;
+}
+
+//Helper function that calculate if the pixel is a shadow
+static const float SMAP_SIZE = 4096.0f;
+static const float SMAP_DX = 1.0f / SMAP_SIZE;
+
+float CalcShadowFactor(float4 shadowPosH)
+{
+	// Complete projection by doing division by w.
+	shadowPosH.xyz /= shadowPosH.w;
+
+	// Depth in NDC space.
+	float depth = shadowPosH.z - 0.001f;
+
+	// Texel size.
+	const float dx = SMAP_DX;
+
+	float percentLit = 0.0f;
+	const float2 offsets[9] =
+	{
+		float2(-dx,  -dx), float2(0.0f,  -dx), float2(dx,  -dx),
+		float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(dx, 0.0f),
+		float2(-dx,  +dx), float2(0.0f,  +dx), float2(dx,  +dx)
+	};
+
+	[unroll]
+	for (int i = 0; i < 9; ++i)
+	{
+		percentLit += txShadow.SampleCmpLevelZero(samShadow,
+			shadowPosH.xy + offsets[i], depth).r;
+	}
+
+	return percentLit /= 9.0f;
+}
+
+float CalcShadow(float4 shadowPosH)
+{
+	shadowPosH.xyz /= shadowPosH.w;
+
+	float depth = shadowPosH.z - 0.001f;
+	
+	return (txShadow.SampleCmpLevelZero(samShadow, shadowPosH.xy, depth).r);
 }
 
 //--------------------------------------------------------------------------------------
@@ -148,8 +199,11 @@ float4 NormalPS(VS_OUTPUT_NORMAL input) : SV_Target
 	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
 	float3 specular = float3(0.0f, 0.0f, 0.0f);
 
+	float shadow = CalcShadowFactor(input.ShadowPosH);
 
-	float3 lightLecNorm = normalize(light.LightPosW - input.PosW);
+	//float shadow = CalcShadow(input.ShadowPosH);
+
+	float3 lightLecNorm = normalize(light.LightDir);
 	// Compute Colour
 
 	// Compute the reflection vector.
@@ -177,11 +231,11 @@ float4 NormalPS(VS_OUTPUT_NORMAL input) : SV_Target
 
 	if (HasTexture == 1.0f)
 	{
-		finalColour.rgb = (textureColour.rgb * (ambient + diffuse)) + specular;
+		finalColour.rgb = (textureColour.rgb * (ambient + (diffuse * shadow))) + (specular * shadow);
 	}
 	else
 	{
-		finalColour.rgb = ambient + diffuse + specular;
+		finalColour.rgb = ambient + ((diffuse*shadow) + (specular*shadow));
 	}
 
 	finalColour.a = surface.DiffuseMtrl.a;
@@ -220,10 +274,12 @@ VS_OUTPUT_SIMPLE_PARRALAX SimpleParralaxVS(VS_INPUT input)
 
 	float3 EyeVecW = (EyePosW - output.PosW).xyz;
 
-	float3 LightVecW = (light.LightPosW - posW).xyz;
+	float3 LightVecW = (light.LightDir).xyz;
 
 	output.LightVecT = normalize(mul(tbnMatrix, LightVecW));
 	output.EyeVecT = normalize(mul(tbnMatrix, EyeVecW));
+
+	output.ShadowPosH = mul(posW, ShadowTransform);
 
 	return output;
 }
@@ -250,7 +306,8 @@ float4 SimpleParralaxPS(VS_OUTPUT_SIMPLE_PARRALAX input) : SV_Target
 	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
 	float3 specular = float3(0.0f, 0.0f, 0.0f);
 	
-	
+	float shadow = CalcShadowFactor(input.ShadowPosH);
+
 	float3 lightLecNorm = normalize(input.LightVecT);
 	// Compute Colour
 	
@@ -277,7 +334,7 @@ float4 SimpleParralaxPS(VS_OUTPUT_SIMPLE_PARRALAX input) : SV_Target
 	// Sum all the terms together and copy over the diffuse alpha.
 	float4 finalColour;
 
-	finalColour.rgb = (textureColour.rgb * (ambient + diffuse)) + specular;
+	finalColour.rgb = (textureColour.rgb * (ambient + (diffuse * shadow)) + (specular * shadow));
 	
 	finalColour.a = surface.DiffuseMtrl.a;
 	
@@ -307,10 +364,12 @@ VS_OUTPUT_PARRALAX ParralaxVS(VS_INPUT input)
 	
 	float3 EyeVecW = (EyePosW - output.PosW).xyz;
 
-	float3 LightVecW = (light.LightPosW - posW).xyz;
+	float3 LightVecW = (light.LightDir).xyz;
 
 	output.LightVecT = normalize(mul(tbnMatrix, LightVecW));
 	output.EyeVecT = normalize(mul(tbnMatrix, EyeVecW));
+
+	output.ShadowPosH = mul(posW, ShadowTransform);
 
 	return output;
 }
@@ -378,16 +437,14 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 	float4 textureColour = txDiffuse.Sample(samLinear, FinalCoords);
 	float4 bumpMap = txNormal.Sample(samLinear, FinalCoords);
 	
-	
-	//float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
-	//float4 bumpMap = txNormal.Sample(samLinear, input.Tex);
-	
 	//Expand the range of the normal value from (0, +1) to (-1, +1)
 	bumpMap = (bumpMap * 2.0f) - 1.0f;
 	
 	float3 ambient = float3(0.0f, 0.0f, 0.0f);
 	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
 	float3 specular = float3(0.0f, 0.0f, 0.0f);
+
+	float shadow = CalcShadowFactor(input.ShadowPosH);
 	
 	//float3 lightLecNorm = normalize(light.LightPosW - input.PosW);
 	float3 lightLecNorm = normalize(input.LightVecT);
@@ -416,7 +473,7 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 	// Sum all the terms together and copy over the diffuse alpha.
 	float4 finalColour;
 	
-	finalColour.rgb = (textureColour.rgb * (ambient + diffuse)) + specular;
+	finalColour.rgb = (textureColour.rgb * (ambient + (diffuse * shadow ))) + (specular * shadow );
 	
 	finalColour.a = surface.DiffuseMtrl.a;
 
