@@ -252,6 +252,7 @@ float4 BlockColourPS(VS_OUTPUT_NORMAL input) : SV_Target
 	
 	return finalColour;
 }
+
 //--------------------------------------------------------------------------------------
 // Parralax Vertex Shader
 //--------------------------------------------------------------------------------------
@@ -283,6 +284,7 @@ VS_OUTPUT_SIMPLE_PARRALAX SimpleParralaxVS(VS_INPUT input)
 
 	return output;
 }
+
 //--------------------------------------------------------------------------------------
 // Parralax Pixel Shader
 //--------------------------------------------------------------------------------------
@@ -340,6 +342,7 @@ float4 SimpleParralaxPS(VS_OUTPUT_SIMPLE_PARRALAX input) : SV_Target
 	
 	return finalColour;
 }
+
 //--------------------------------------------------------------------------------------
 // Parralax Occlusion Vertex Shader
 //--------------------------------------------------------------------------------------

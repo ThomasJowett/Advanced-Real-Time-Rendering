@@ -220,9 +220,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	gameObject->SetTextureRV(_pDiffuseGroundTextureRV, TX_DIFFUSE);
 	gameObject->SetTextureRV(_pNormalGroundTextureRV, TX_NORMAL);
 	gameObject->SetTextureRV(_pHeightGroundTextureRV, TX_HEIGHTMAP);
-
+	
 	gameObject->SetShaderToUse(FX_PARRALAXED_OCCLUSION);
-
+	
 	_gameObjects.push_back(gameObject);
 
 	transform = new Transform(Vector3D(0.0f, 1.0f, 0.0f), Vector3D(XM_PIDIV2, 0, 0), Vector3D(1.0f, 1.0f, 1.0f));
@@ -234,24 +234,24 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	gameObject->SetShaderToUse(FX_PARRALAXED);
 	
 	_gameObjects.push_back(gameObject);
-
+	
 	transform = new Transform(Vector3D(5.0f, 1.0f, 0.0f), Vector3D(0, XM_PI, 0), Vector3D(0.01f, 0.01f, 0.01f));
-
+	
 	gameObject = new GameObject("SpaceMan", transform, SpaceManGeometry, shinyMaterial);
 	gameObject->SetTextureRV(_pDiffuseSpaceManTextureRV, TX_DIFFUSE);
 	gameObject->SetTextureRV(_pNormalSpaceManTextureRV, TX_NORMAL);
-
+	
 	_gameObjects.push_back(gameObject);
-
+	
 	transform = new Transform(Vector3D(-5.0f, 1.0f, 0.0f), Vector3D(0, 0, 0), Vector3D(0.01f, 0.01f, 0.01f));
-
+	
 	gameObject = new GameObject("Gun", transform, GunGeometry, metal); 
 	gameObject->SetTextureRV(_pDiffuseGunTextureRV, TX_DIFFUSE);
 	gameObject->SetTextureRV(_pNormalGunTextureRV, TX_NORMAL);
-
-
+	
+	
 	_gameObjects.push_back(gameObject);
-
+	
 	Vector3D position;
 
 	for (auto i = 0; i < 5; i++)
@@ -284,7 +284,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 		}
 		gameObject->SetTextureRV(_pDiffuseStoneTextureRV,TX_DIFFUSE);
 		gameObject->SetTextureRV(_pNormalStoneTextureRV, TX_NORMAL);
-
+	
 		_gameObjects.push_back(gameObject);
 	}
 
@@ -711,8 +711,26 @@ void Application::Cleanup()
     if (_pConstantBuffer) _pConstantBuffer->Release();
 
     if (_pVertexLayout) _pVertexLayout->Release();
+	if (_pPostProcessLayout) _pPostProcessLayout->Release();
+
     if (_pNormalVertexShader) _pNormalVertexShader->Release();
     if (_pNormalPixelShader) _pNormalPixelShader->Release();
+	if (_pParralaxVertexShader) _pParralaxVertexShader->Release();
+	if (_pParralaxPixelShader) _pParralaxPixelShader->Release();
+	if (_pParralaxOcclusionVertexShader) _pParralaxOcclusionVertexShader->Release();
+	if (_pParralaxOcclusionPixelShader) _pParralaxOcclusionPixelShader->Release();
+	if (_pTesselationPixelShader) _pTesselationPixelShader->Release();
+	if (_pTesselationVertexShader) _pTesselationVertexShader->Release();
+	if (_pBlockColourPixelShader) _pBlockColourPixelShader->Release();
+	if (_pNoPostProcessPixelShader) _pNoPostProcessPixelShader->Release();
+	if (_pBloomPixelShader) _pBloomPixelShader->Release();
+	if (_pGaussianBlurPixelShader) _pGaussianBlurPixelShader->Release();
+	if (_pPassThroughVertexShader) _pPassThroughVertexShader->Release();
+	if (_pShadowMapVertexShader)_pShadowMapVertexShader->Release();
+	if (_pHullShader) _pHullShader->Release();
+	if (_pDomainShader) _pDomainShader->Release();
+	if (_pDisplacementDomainShader) _pDisplacementDomainShader->Release();
+
     if (_pRenderTargetView) _pRenderTargetView->Release();
     if (_pSwapChain) _pSwapChain->Release();
     if (_pImmediateContext) _pImmediateContext->Release();
@@ -788,6 +806,8 @@ void Application::DrawSceneToShadowMap()
 
 	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	_pImmediateContext->HSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	_pImmediateContext->DSSetConstantBuffers(0, 1, &_pConstantBuffer);
 
 	ShadowMapConstantBuffer cb;
 

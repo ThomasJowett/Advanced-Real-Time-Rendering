@@ -34,7 +34,6 @@ struct VS_OUTPUT
 //--------------------------------------------------------------------------------------
 // Pass Through Vertex Shader
 //--------------------------------------------------------------------------------------
-
 VS_OUTPUT PassThroughVS(VS_INPUT input)
 {
 	VS_OUTPUT output = (VS_OUTPUT)0;
@@ -49,7 +48,6 @@ VS_OUTPUT PassThroughVS(VS_INPUT input)
 //--------------------------------------------------------------------------------------
 // No Post Process Pixel Shader
 //--------------------------------------------------------------------------------------
-
 float4 NoPostProcessPS(VS_OUTPUT input) : SV_Target
 {
 	float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
