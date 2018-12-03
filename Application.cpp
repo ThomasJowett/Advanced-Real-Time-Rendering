@@ -828,8 +828,18 @@ void Application::DrawSceneToShadowMap()
 		// Update constant buffer
 		_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
 
+		if (gameObject->GetShaderToUse() == FX_WIREFRAME)
+		{
+			_pImmediateContext->RSSetState(RSWireFrame);
+		}
+		else
+		{
+			_pImmediateContext->RSSetState(RSCull);
+		}
+
 		//Draw Object
 		gameObject->Draw(_pImmediateContext);
+
 	}
 }
 
@@ -878,7 +888,7 @@ void Application::Update(float deltaTime)
 
 	counter+= deltaTime;
 
-	//basicLight.Direction.x = sin(counter)*10;
+	basicLight.Direction.x = sin(counter)*10;
 
 	_pShadowMap->BuildShadowTransforms(basicLight);
 }
