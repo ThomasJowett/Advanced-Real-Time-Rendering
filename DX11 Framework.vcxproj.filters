@@ -28,6 +28,7 @@
     <ClInclude Include="PostProcess.h" />
     <ClInclude Include="ShadowMapping.h" />
     <ClInclude Include="Lights.h" />
+    <ClInclude Include="SSAO.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
@@ -40,6 +41,7 @@
     <ClCompile Include="ObJLoader.cpp" />
     <ClCompile Include="PostProcess.cpp" />
     <ClCompile Include="ShadowMapping.cpp" />
+    <ClCompile Include="SSAO.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">
@@ -62,6 +64,12 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="ShadowMap.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="SSAO.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="SSAONormalDepth.fx">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

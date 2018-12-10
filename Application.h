@@ -26,6 +26,7 @@
 */
 #include "GameObject.h"
 #include "ShadowMapping.h"
+#include "SSAO.h"
 
 using namespace DirectX;
 
@@ -54,15 +55,21 @@ private:
 	ID3D11PixelShader*      _pGaussianBlurPixelShader;
 	ID3D11PixelShader*      _pBloomPixelShader;
 	ID3D11VertexShader*     _pShadowMapVertexShader;
+	ID3D11VertexShader*     _pSSAOVertexShader;
+	ID3D11PixelShader*      _pSSAOPixelShader;
+	ID3D11VertexShader*     _pSSAONormalDepthVertexShader;
+	ID3D11PixelShader*      _pSSAONormalDepthPixelShader;
 
 	ID3D11HullShader*		_pHullShader = nullptr;
 	ID3D11DomainShader*		_pDomainShader = nullptr;
 	ID3D11DomainShader*		_pDisplacementDomainShader = nullptr;
 	ID3D11VertexShader*     _pTesselationVertexShader;
 	ID3D11PixelShader*      _pTesselationPixelShader;
+	ID3D11PixelShader*      _pDisplacmentPixelShader;
 
 	ID3D11InputLayout*      _pVertexLayout;
 	ID3D11InputLayout*      _pPostProcessLayout;
+	ID3D11InputLayout*		_pSSOALayout;
 
 	Mesh*					_fullscreenQuad;
 
@@ -91,6 +98,7 @@ private:
 	Light basicLight;
 
 	ShadowMap* _pShadowMap;
+	SSAO* _pSSAO;
 
 	vector<GameObject *> _gameObjects;
 
@@ -135,6 +143,7 @@ private:
 	ID3D11RasterizerState* ViewMode();
 
 	void DrawSceneToShadowMap();
+	void DrawSceneToSSAODepthMap();
 
 	float counter = 0.01f;
 	float heightMapScale = 0.01f;

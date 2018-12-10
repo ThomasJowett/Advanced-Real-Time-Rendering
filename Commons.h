@@ -88,6 +88,26 @@ __declspec(align(16)) struct ShadowMapConstantBuffer
 	XMMATRIX Projection;
 };
 
+__declspec(align(16)) struct SSAOConstantBuffer
+{
+	XMMATRIX ViewToTexSpace;
+	XMFLOAT4 OffsetVectors[14];
+	XMFLOAT4 FrustumCorners[4];
+
+	FLOAT OcclusionRadius;
+	FLOAT OcculsionFadeStart;
+	FLOAT OcclusionFadeEnd;
+	FLOAT SurfaceEpsilon;
+};
+
+__declspec(align(16)) struct SSAONormalDepthConstantBuffer
+{
+	XMMATRIX WorldView;
+	XMMATRIX WorldInvTransposeView;
+	XMMATRIX WorldViewProjection;
+	XMMATRIX TexTransform;
+};
+
 struct IndexedModel
 {
 	std::vector<SimpleVertex> Vertices;

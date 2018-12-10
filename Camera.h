@@ -22,6 +22,8 @@ private:
 	XMFLOAT4X4 _view;
 	XMFLOAT4X4 _projection;
 
+	FLOAT _fovY;
+
 public:
 	Camera(XMFLOAT3 position, XMFLOAT3 at, XMFLOAT3 up, FLOAT windowWidth, FLOAT windowHeight, FLOAT nearDepth, FLOAT farDepth);
 	~Camera();
@@ -42,5 +44,9 @@ public:
 	void SetUp(XMFLOAT3 up) { _up = up; }
 
 	void Reshape(FLOAT windowWidth, FLOAT windowHeight, FLOAT nearDepth, FLOAT farDepth);
+
+	float GetFovY() { return _fovY; }
+	float GetFarDepth() { return _farDepth; }
+	float GetNearDepth() { return _nearDepth; }
 };
 

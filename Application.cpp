@@ -284,9 +284,14 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 		}
 		gameObject->SetTextureRV(_pDiffuseStoneTextureRV,TX_DIFFUSE);
 		gameObject->SetTextureRV(_pNormalStoneTextureRV, TX_NORMAL);
+		gameObject->SetTextureRV(_pHeightCrateTextureRV, TX_HEIGHTMAP);
 	
 		_gameObjects.push_back(gameObject);
 	}
+
+	//Create the shadow map
+	_pShadowMap = new ShadowMap(_pd3dDevice, _shadowMapWidth, _shadowMapHeight);
+	_pSSAO = new SSAO(_pd3dDevice, _pImmediateContext, _renderWidth, _renderHeight, _camera->GetFovY(), _camera->GetFarDepth());
 
 	return S_OK;
 }
@@ -325,12 +330,11 @@ HRESULT Application::InitShadersAndInputLayout()
 	hr = CompileShaderFromFile(L"DX11 Framework.fx", "BlockColourPS", "ps_5_0", &pPSBlob);
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pBlockColourPixelShader);
 
-	//Compile the Parralax map vertex shader
+	//Compile the Shadow map vertex shader
 	hr = CompileShaderFromFile(L"ShadowMap.fx", "ShadowMapVS", "vs_5_0", &pVSBlob);
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pShadowMapVertexShader);
 
-
-	pPSBlob->Release();
+	
 
     if (FAILED(hr))
         return hr;
@@ -349,7 +353,7 @@ HRESULT Application::InitShadersAndInputLayout()
     // Create the input layout
 	hr = _pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
                                         pVSBlob->GetBufferSize(), &_pVertexLayout);
-	pVSBlob->Release();
+	
 
 	//Compile the PassThrough vertex shader
 	hr = CompileShaderFromFile(L"PostProcess.fx", "PassThroughVS", "vs_5_0", &pVSBlob);
@@ -399,6 +403,39 @@ HRESULT Application::InitShadersAndInputLayout()
 
 	hr = CompileShaderFromFile(L"Tesselation.fx", "TesselationPS", "ps_5_0", &pPSBlob);
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pTesselationPixelShader);
+
+	hr = CompileShaderFromFile(L"Tesselation.fx", "DisplacementPS", "ps_5_0", &pPSBlob);
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pDisplacmentPixelShader);
+
+	D3D11_INPUT_ELEMENT_DESC layoutSSOA[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+
+	// Create the input layout
+	hr = _pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
+		pVSBlob->GetBufferSize(), &_pSSOALayout);
+
+	//Compile the SSAO vertex shader
+	hr = CompileShaderFromFile(L"SSAO.fx", "SSAOVS", "vs_5_0", &pVSBlob);
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pSSAOVertexShader);
+	
+	//Compile the SSAO pixel shader
+	hr = CompileShaderFromFile(L"SSAO.fx", "SSAOPS", "ps_5_0", &pPSBlob);
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pSSAOPixelShader);
+
+	//Compile the SSAO Normal Depth vertex shader
+	hr = CompileShaderFromFile(L"SSAONormalDepth.fx", "SSAONormalDepthVS", "vs_5_0", &pVSBlob);
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pSSAONormalDepthVertexShader);
+
+	//Compile the SSAO Normal Depth pixel shader
+	hr = CompileShaderFromFile(L"SSAONormalDepth.fx", "SSAONormalDepthPS", "ps_5_0", &pPSBlob);
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pSSAONormalDepthPixelShader);
+
+	pVSBlob->Release();
+	pPSBlob->Release();
 
     // Set the input layout
     _pImmediateContext->IASetInputLayout(_pVertexLayout);
@@ -692,8 +729,7 @@ HRESULT Application::InitDevice()
 	cmdesc.FrontCounterClockwise = false;
 	hr = _pd3dDevice->CreateRasterizerState(&cmdesc, &CWcullMode);
 
-	//Create the shadow map
-	_pShadowMap = new ShadowMap(_pd3dDevice, _shadowMapWidth, _shadowMapHeight);
+	
 
     return S_OK;
 }
@@ -828,9 +864,71 @@ void Application::DrawSceneToShadowMap()
 		// Update constant buffer
 		_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
 
+		if (gameObject->GetShaderToUse() == FX_WIREFRAME)
+		{
+			_pImmediateContext->RSSetState(RSWireFrame);
+		}
+		else
+		{
+			_pImmediateContext->RSSetState(RSCull);
+		}
+
 		//Draw Object
 		gameObject->Draw(_pImmediateContext);
+
 	}
+}
+
+void Application::DrawSceneToSSAODepthMap()
+{
+	XMMATRIX view = XMLoadFloat4x4(&_camera->GetView());
+	XMMATRIX projection = XMLoadFloat4x4(&_camera->GetProjection());
+
+	_pImmediateContext->VSSetShader(_pSSAONormalDepthVertexShader, nullptr, 0);
+	_pImmediateContext->PSSetShader(_pSSAONormalDepthPixelShader, nullptr, 0);
+	_pImmediateContext->HSSetShader(nullptr, nullptr, 0);
+	_pImmediateContext->DSSetShader(nullptr, nullptr, 0);
+	_pImmediateContext->IASetInputLayout(_pSSOALayout);
+
+	XMMATRIX world;
+	XMMATRIX worldInvTranspose;
+	XMMATRIX worldView;
+	XMMATRIX worldInvTransposeView;
+	XMMATRIX WorldViewProjection;
+
+	SSAONormalDepthConstantBuffer cb;
+
+	for (auto gameObject : _gameObjects)
+	{
+		world = XMMatrixTranspose(gameObject->GetTransform()->GetWorldMatrix());
+		worldInvTranspose = world;
+		worldInvTranspose.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+
+		XMVECTOR det = XMMatrixDeterminant(worldInvTranspose);
+		worldInvTranspose = XMMatrixTranspose(XMMatrixInverse(&det, worldInvTranspose));
+
+		worldView = world * view;
+
+		worldInvTransposeView = worldInvTranspose * view;
+		WorldViewProjection = world * view * projection;
+	
+		// Update constant buffer
+		_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+	
+		if (gameObject->GetShaderToUse() == FX_WIREFRAME)
+		{
+			_pImmediateContext->RSSetState(RSWireFrame);
+		}
+		else
+		{
+			_pImmediateContext->RSSetState(RSCull);
+		}
+	
+		//Draw Object
+		gameObject->Draw(_pImmediateContext);
+	
+	}
+
 }
 
 void Application::Update(float deltaTime)
@@ -878,7 +976,7 @@ void Application::Update(float deltaTime)
 
 	counter+= deltaTime;
 
-	//basicLight.Direction.x = sin(counter)*10;
+	basicLight.Direction.x = sin(counter)*10;
 
 	_pShadowMap->BuildShadowTransforms(basicLight);
 }
@@ -890,11 +988,20 @@ void Application::Draw()
 
 	DrawSceneToShadowMap();
 
-	_pImmediateContext->RSSetViewports(1, &_vp);
-
 	//create a null texture
 	ID3D11ShaderResourceView* null[] = { nullptr, nullptr };
 	_pImmediateContext->PSSetShaderResources(3, 2, null);
+
+	//bind the ssao depth map render target
+	_pSSAO->SetNormalDepthRenderTarget(_depthStencilView);
+
+	DrawSceneToSSAODepthMap();
+
+	_pSSAO->ComputeSSAO(_camera);
+	_pSSAO->BlurAmbientMap(4);
+
+	//Set the view port
+	_pImmediateContext->RSSetViewports(1, &_vp);
 
 	//Set the render target
 	_pImmediateContext->OMSetRenderTargets(1, &_RTTRenderTargetView, _depthStencilView);
@@ -1024,7 +1131,7 @@ void Application::Draw()
 			_pImmediateContext->HSSetShader(_pHullShader, nullptr, 0);
 			_pImmediateContext->DSSetShader(_pDisplacementDomainShader, nullptr, 0);
 			_pImmediateContext->VSSetShader(_pTesselationVertexShader, nullptr, 0);
-			_pImmediateContext->PSSetShader(_pTesselationPixelShader, nullptr, 0);
+			_pImmediateContext->PSSetShader(_pDisplacmentPixelShader, nullptr, 0);
 			textureRV = gameObject->GetTextureRV(TX_DIFFUSE);
 			_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
 			textureRV = gameObject->GetTextureRV(TX_NORMAL);
