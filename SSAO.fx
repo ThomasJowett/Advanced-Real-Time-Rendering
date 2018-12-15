@@ -9,6 +9,8 @@ SamplerState samNormalDepth : register(s0);
 
 SamplerState samRandomVec : register(s1);
 
+SamplerState samLinear : register(s2);
+
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
@@ -24,6 +26,9 @@ cbuffer ConstantBuffer : register(b0)
     float OcclusionFadeStart = 0.2f;
     float OcclusionFadeEnd = 2.0f;
     float SurfaceEpsilon = 0.05f;
+
+    int gSampleCount = 14;
+
 }
 
 struct VS_INPUT
@@ -50,6 +55,7 @@ VS_OUTPUT SSAOVS(VS_INPUT input)
 
     output.Tex = input.Tex;
 
+    output.Tex = input.ToFarPlaneIndex.yz;
     return output;
 }
 // Determines how much the sample point q occludes the point p as a function
@@ -84,11 +90,10 @@ float OcclusionFunction(float distZ)
 		// from gOcclusionFadeStart to gOcclusionFadeEnd.	
         occlusion = saturate((OcclusionFadeEnd - distZ) / fadeLength);
     }
-	
     return occlusion;
 }
 
-float4 SSAOPS(VS_OUTPUT input, uniform int gSampleCount) : SV_Target
+float4 SSAOPS(VS_OUTPUT input) : SV_Target
 {
 	// p -- the point we are computing the ambient occlusion for.
 	// n -- normal vector at p.
@@ -109,10 +114,12 @@ float4 SSAOPS(VS_OUTPUT input, uniform int gSampleCount) : SV_Target
 	// t = p.z / input.ToFarPlane.z
 	//
     float3 p = (pz / input.ToFarPlane.z) * input.ToFarPlane;
+
+    return float4(input.ToFarPlane.zzz /100, 1.0f);
 	
 	// Extract random vector and map from [0,1] --> [-1, +1].
     float3 randVec = 2.0f * txRandomVectorMap.SampleLevel(samRandomVec, 4.0f * input.Tex, 0.0f).rgb - 1.0f;
-
+    
     float occlusionSum = 0.0f;
 	
 	// Sample neighboring points about p in the hemisphere oriented by n.
@@ -168,6 +175,8 @@ float4 SSAOPS(VS_OUTPUT input, uniform int gSampleCount) : SV_Target
     occlusionSum /= gSampleCount;
 	
     float access = 1.0f - occlusionSum;
+
+    
 
 	// Sharpen the contrast of the SSAO map to make the SSAO affect more dramatic.
     return saturate(pow(access, 4.0f));

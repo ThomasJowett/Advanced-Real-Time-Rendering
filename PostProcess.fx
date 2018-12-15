@@ -50,12 +50,13 @@ VS_OUTPUT PassThroughVS(VS_INPUT input)
 //--------------------------------------------------------------------------------------
 float4 NoPostProcessPS(VS_OUTPUT input) : SV_Target
 {
+    //return float4(input.Tex, 1.0f, 1.0f);
 	float4 textureColour = txDiffuse.Sample(samLinear, input.Tex);
 	float4 vingetteColour = vingette.Sample(samLinear, input.Tex);
 
 	float4 finalColour = lerp(0.0f, textureColour, vingetteColour + 0.5f);
 	//finalColour += vingetteColour/2;
-	return finalColour;
+    return textureColour;
 }
 
 //------------------------------------------------------------------------------------

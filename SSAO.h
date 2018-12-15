@@ -13,8 +13,9 @@ public:
 	SSAO(ID3D11Device* device, ID3D11DeviceContext* deviceContext, int width, int height, float fovy, float farZ);
 	~SSAO();
 
-	ID3D11ShaderResourceView* NormalDepthSRV();
+	ID3D11ShaderResourceView* NormalDepthSRV() const;
 	ID3D11ShaderResourceView* AmbientSRV();
+	ID3D11ShaderResourceView* RandomVectorSRV();
 
 	void SetNormalDepthRenderTarget(ID3D11DepthStencilView* depthStencilView);
 
@@ -38,7 +39,7 @@ private:
 
 	void BuildOffsetVectors();
 
-	void DrawFullScreenQuad();
+	void BuildFullScreenQuad();
 
 private:
 	ID3D11Device * _pd3dDevice;
@@ -64,9 +65,12 @@ private:
 
 	XMFLOAT4 _offsets[14];
 
-	Mesh* _mesh;
+	ID3D11Buffer * _fullScreenQuadVertexBuffer;
+	ID3D11Buffer * _fullScreenQuadIndexBuffer;
 
 	ID3D11SamplerState * _pSamplerNormalDepth;
 	ID3D11SamplerState * _pSamplerRandomVector;
+	ID3D11SamplerState * _pSamplerLinear;
+
 	ID3D11Buffer * _pConstantBuffer;
 };

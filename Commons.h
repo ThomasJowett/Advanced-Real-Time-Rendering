@@ -94,10 +94,12 @@ __declspec(align(16)) struct SSAOConstantBuffer
 	XMFLOAT4 OffsetVectors[14];
 	XMFLOAT4 FrustumCorners[4];
 
-	FLOAT OcclusionRadius;
-	FLOAT OcculsionFadeStart;
-	FLOAT OcclusionFadeEnd;
-	FLOAT SurfaceEpsilon;
+	FLOAT OcclusionRadius = 0.05f;
+	FLOAT OcculsionFadeStart = 0.2f;
+	FLOAT OcclusionFadeEnd = 20.0f;
+	FLOAT SurfaceEpsilon = 0.05f;
+
+	INT SampleCount = 14;
 };
 
 __declspec(align(16)) struct SSAONormalDepthConstantBuffer
@@ -106,6 +108,9 @@ __declspec(align(16)) struct SSAONormalDepthConstantBuffer
 	XMMATRIX WorldInvTransposeView;
 	XMMATRIX WorldViewProjection;
 	XMMATRIX TexTransform;
+	//XMMATRIX World;
+	//XMMATRIX View;
+	//XMMATRIX Projection;
 };
 
 struct IndexedModel
@@ -113,3 +118,18 @@ struct IndexedModel
 	std::vector<SimpleVertex> Vertices;
 	std::vector<WORD> Indices;
 };
+
+namespace MathHelper
+{
+	static XMMATRIX InverseTranspose(CXMMATRIX M)
+	{
+		// Inverse-transpose is just applied to normals.  So zero out 
+		// translation row so that it doesn't get into our inverse-transpose
+		// calculation--we don't want the inverse-transpose of the translation.
+		XMMATRIX A = M;
+		A.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+		XMVECTOR det = XMMatrixDeterminant(A);
+
+		return XMMatrixTranspose(XMMatrixInverse(&det, A));
+	}
+}

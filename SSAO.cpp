@@ -1,5 +1,8 @@
 #include "SSAO.h"
 #include "GeometryGenerator.h"
+#include <DirectXPackedVector.h>
+
+constexpr UINT randomTextureSize = 128;
 
 SSAO::SSAO(ID3D11Device * device, ID3D11DeviceContext * deviceContext, int width, int height, float fovy, float farZ)
 	:_pd3dDevice(device), _pImmediateContext(deviceContext), _randomVectorSRV(0), _normalDepthRTV(0), _normalDepthSRV(0),
@@ -18,7 +21,7 @@ SSAO::SSAO(ID3D11Device * device, ID3D11DeviceContext * deviceContext, int width
 	BuildFrustumFarCorners(fovy, farZ);
 	BuildTextureViews();
 
-	_mesh = new Mesh(GeometryGenerator::CreateFullScreenQuad(), device);
+	BuildFullScreenQuad();
 	BuildSamplers();
 
 	D3D11_BUFFER_DESC bd;
@@ -28,18 +31,21 @@ SSAO::SSAO(ID3D11Device * device, ID3D11DeviceContext * deviceContext, int width
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = 0;
 	_pd3dDevice->CreateBuffer(&bd, nullptr, &_pConstantBuffer);
+
+	BuildOffsetVectors();
+	BuildRandomVectorTexture();
 }
 
 SSAO::~SSAO()
 {
-	delete _mesh;
-
+	if (_fullScreenQuadIndexBuffer) _fullScreenQuadIndexBuffer->Release();
+	if (_fullScreenQuadVertexBuffer) _fullScreenQuadVertexBuffer->Release();
 	if (_randomVectorSRV) _randomVectorSRV->Release();
 
 	ReleaseTextureViews();
 }
 
-ID3D11ShaderResourceView * SSAO::NormalDepthSRV()
+ID3D11ShaderResourceView * SSAO::NormalDepthSRV() const
 {
 	return _normalDepthSRV;
 }
@@ -49,22 +55,27 @@ ID3D11ShaderResourceView * SSAO::AmbientSRV()
 	return _ambientSRV0;
 }
 
+ID3D11ShaderResourceView * SSAO::RandomVectorSRV()
+{
+	return _randomVectorSRV;
+}
+
 void SSAO::SetNormalDepthRenderTarget(ID3D11DepthStencilView * depthStencilView)
 {
-	ID3D11RenderTargetView* renderTargets[1] = { _normalDepthRTV };
-	_pImmediateContext->OMSetRenderTargets(1, renderTargets, depthStencilView);
+	_pImmediateContext->OMSetRenderTargets(1, &_normalDepthRTV, depthStencilView);
 
 	float clearColor[] = { 0.0f, 0.0f, -1.0f, 1e5f };
 	_pImmediateContext->ClearRenderTargetView(_normalDepthRTV, clearColor);
+
+	_pImmediateContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
 void SSAO::ComputeSSAO(const Camera * camera)
 {
 	//Assumes that the vertex and pixel shaders are already set
-
-	ID3D11RenderTargetView* renderTargets[1] = { _ambientRTV0 };
-	_pImmediateContext->OMSetRenderTargets(1, renderTargets, 0);
-	float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	//Set the render target
+	_pImmediateContext->OMSetRenderTargets(1, &_ambientRTV0, 0);
+	float ClearColor[4] = { 0.0f, 1.0f, 1.0f, 1.0f };//cyan
 	_pImmediateContext->ClearRenderTargetView(_ambientRTV0, ClearColor);
 	_pImmediateContext->RSSetViewports(1, &_ambientViewport);
 
@@ -74,35 +85,43 @@ void SSAO::ComputeSSAO(const Camera * camera)
 		0.0f, -0.5f, 0.0f, 0.0f,
 		0.0f, 0.0f, 1.0f, 0.0f,
 		0.5f, 0.5f, 0.0f, 1.0f);
-
+	
 	XMMATRIX P = XMLoadFloat4x4(&camera->GetProjection());
 	XMMATRIX PT = XMMatrixMultiply(P, T);
-
-
+	
+	
 	//Set variables in the constant buffer
 	SSAOConstantBuffer cb;
-
+	
 	cb.ViewToTexSpace = PT;
 	auto offsets = reinterpret_cast<XMFLOAT4*>(cb.OffsetVectors);
 	offsets = _offsets;
 	auto frustumCorners = reinterpret_cast<XMFLOAT4*>(cb.FrustumCorners);
 	frustumCorners = _frustumFarCorner;
-
+	
+	//Bind shader resource views
+	_pImmediateContext->PSSetShaderResources(0, 1, &_normalDepthSRV);
+	_pImmediateContext->PSSetShaderResources(1, 1, &_randomVectorSRV);
+	
 	//set samplers
 	_pImmediateContext->PSSetSamplers(0, 1, &_pSamplerNormalDepth);
 	_pImmediateContext->PSSetSamplers(1, 1, &_pSamplerRandomVector);
-
+	_pImmediateContext->PSSetSamplers(2, 1, &_pSamplerLinear);
+	
 	//Bind the constant buffers
 	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
-
+	
+	UINT stride = sizeof(SimpleVertex);
+	UINT offset = 0;
+	
 	_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	_pImmediateContext->IASetVertexBuffers(0, 1, &_mesh->_vertexBuffer, &_mesh->_vertexBufferStride, &_mesh->_vertexBufferOffset);
-	_pImmediateContext->IASetIndexBuffer(_mesh->_indexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-	_pImmediateContext->DrawIndexed(_mesh->_numberOfIndices, 0, 0);
+	
+	_pImmediateContext->IASetVertexBuffers(0, 1, &_fullScreenQuadVertexBuffer, &stride, &offset);
+	_pImmediateContext->IASetIndexBuffer(_fullScreenQuadIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+	
+	_pImmediateContext->DrawIndexed(6, 0, 0);
 }
 
 void SSAO::BuildSamplers()
@@ -110,8 +129,12 @@ void SSAO::BuildSamplers()
 	D3D11_SAMPLER_DESC sampDesc;
 	ZeroMemory(&sampDesc, sizeof(sampDesc));
 	sampDesc.Filter = D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
-	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	sampDesc.MinLOD = 0;
+	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
 	_pd3dDevice->CreateSamplerState(&sampDesc, &_pSamplerNormalDepth);
 	
@@ -119,12 +142,41 @@ void SSAO::BuildSamplers()
 	sampDesc.Filter = D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
 	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	sampDesc.MinLOD = 0;
+	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
 	_pd3dDevice->CreateSamplerState(&sampDesc, &_pSamplerRandomVector);
+
+	ZeroMemory(&sampDesc, sizeof(sampDesc));
+	sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	sampDesc.MinLOD = 0;
+	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	_pd3dDevice->CreateSamplerState(&sampDesc, &_pSamplerLinear);
 }
 
 void SSAO::BlurAmbientMap(int blurCount)
 {
+	for (int i = 0; i < blurCount; ++i)
+	{
+		BlurAmbientMap(_ambientSRV0, _ambientRTV1, true);
+		BlurAmbientMap(_ambientSRV1, _ambientRTV0, false);
+	}
+}
+
+void SSAO::BlurAmbientMap(ID3D11ShaderResourceView * inputSRV, ID3D11RenderTargetView * outputRTV, bool horzBlur)
+{
+	_pImmediateContext->OMSetRenderTargets(1, &outputRTV, 0);
+	float ClearColor[4] = { 1.0f, 0.7f, 0.2f, 1.0f };//Orange
+	_pImmediateContext->ClearRenderTargetView(outputRTV, ClearColor);
+	_pImmediateContext->RSSetViewports(1, &_ambientViewport);
+
+
 }
 
 void SSAO::BuildFrustumFarCorners(float fovY, float farZ)
@@ -166,7 +218,8 @@ void SSAO::BuildTextureViews()
 
 	texDesc.Width = _renderTargetWidth / 2;
 	texDesc.Height = _renderTargetHeight / 2;
-	texDesc.Format = DXGI_FORMAT_R16_FLOAT;
+	//texDesc.Format = DXGI_FORMAT_R16_FLOAT;
+	texDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	ID3D11Texture2D* ambientTex0 = 0;
 	_pd3dDevice->CreateTexture2D(&texDesc, 0, &ambientTex0);
 	_pd3dDevice->CreateShaderResourceView(ambientTex0, 0, &_ambientSRV0);
@@ -194,8 +247,8 @@ void SSAO::ReleaseTextureViews()
 void SSAO::BuildRandomVectorTexture()
 {
 	D3D11_TEXTURE2D_DESC texDesc;
-	texDesc.Width = 256;
-	texDesc.Height = 256;
+	texDesc.Width = randomTextureSize;
+	texDesc.Height = randomTextureSize;
 	texDesc.MipLevels = 1;
 	texDesc.ArraySize = 1;
 	texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -205,28 +258,27 @@ void SSAO::BuildRandomVectorTexture()
 	texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 	texDesc.CPUAccessFlags = 0;
 	texDesc.MiscFlags = 0;
-
+	
 	D3D11_SUBRESOURCE_DATA initData = { 0 };
-	initData.SysMemPitch = 256 * sizeof(XMFLOAT4);
-
-	XMFLOAT4 color[256 * 256];
-	for (int i = 0; i < 256; ++i)
+	initData.SysMemPitch = randomTextureSize * sizeof(XMFLOAT4);
+	
+	XMFLOAT4 colour[randomTextureSize * randomTextureSize];
+	for (int i = 0; i < randomTextureSize; ++i)
 	{
-		for (int j = 0; j < 256; ++j)
+		for (int j = 0; j < 128; ++j)
 		{
-			XMFLOAT3 v((float)(rand()) / (float)RAND_MAX, (float)(rand()) / (float)RAND_MAX, (float)(rand()) / (float)RAND_MAX);
-
-			color[i * 256 + j] = XMFLOAT4(v.x, v.y, v.z, 0.0f);
+				XMFLOAT3 v((float)(rand()) / (float)RAND_MAX, (float)(rand()) / (float)RAND_MAX, (float)(rand()) / (float)RAND_MAX);
+				colour[i * randomTextureSize + j] = XMFLOAT4( v.x, v.y, v.z, 0.0f );
 		}
 	}
-
-	initData.pSysMem = color;
-
+	
+	initData.pSysMem = colour;
+	
 	ID3D11Texture2D* tex = 0;
 	_pd3dDevice->CreateTexture2D(&texDesc, &initData, &tex);
-
+	
 	_pd3dDevice->CreateShaderResourceView(tex, 0, &_randomVectorSRV);
-
+	
 	// view saves a reference.
 	if (tex) tex->Release();
 }
@@ -264,4 +316,69 @@ void SSAO::BuildOffsetVectors()
 
 		XMStoreFloat4(&_offsets[i], v);
 	}
+}
+
+void SSAO::BuildFullScreenQuad()
+{
+	SimpleVertex vertices[4];
+
+	vertices[0].PosL = XMFLOAT3(-1.0f, -1.0f, 0.0f);
+	vertices[1].PosL = XMFLOAT3(-1.0f, +1.0f, 0.0f);
+	vertices[2].PosL = XMFLOAT3(+1.0f, +1.0f, 0.0f);
+	vertices[3].PosL = XMFLOAT3(+1.0f, -1.0f, 0.0f);
+
+	//Store far plane frustum corner indices in normal.x slot
+	//and the texture coordinates in the yz
+	vertices[0].NormL = XMFLOAT3(0.0f, 0.0f, 1.0f);
+	vertices[1].NormL = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	vertices[2].NormL = XMFLOAT3(2.0f, 1.0f, 0.0f);
+	vertices[3].NormL = XMFLOAT3(3.0f, 1.0f, 1.0f);
+
+	//vertices[0].Tangent = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	//vertices[1].Tangent = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	//vertices[2].Tangent = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	//vertices[3].Tangent = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	//
+	//vertices[0].Tex = XMFLOAT2(0.0f, 1.0f);
+	//vertices[1].Tex = XMFLOAT2(0.0f, 0.0f);
+	//vertices[2].Tex = XMFLOAT2(1.0f, 0.0f);
+	//vertices[3].Tex = XMFLOAT2(1.0f, 1.0f);
+
+	D3D11_BUFFER_DESC vbd;
+	ZeroMemory(&vbd, sizeof(vbd));
+	//vbd.Usage = D3D11_USAGE_IMMUTABLE;
+	vbd.Usage = D3D11_USAGE_DEFAULT;
+	vbd.ByteWidth = sizeof(SimpleVertex) * 4;
+	vbd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	vbd.CPUAccessFlags = 0;
+	vbd.MiscFlags = 0;
+	vbd.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA vinitData;
+	ZeroMemory(&vinitData, sizeof(vinitData));
+	vinitData.pSysMem = vertices;
+
+	_pd3dDevice->CreateBuffer(&vbd, &vinitData, &_fullScreenQuadVertexBuffer);
+
+	WORD indices[6] =
+	{
+		0,1,2,
+		0,2,3
+	};
+
+	D3D11_BUFFER_DESC ibd;
+	ZeroMemory(&ibd, sizeof(ibd));
+	//ibd.Usage = D3D11_USAGE_IMMUTABLE;
+	ibd.Usage = D3D11_USAGE_DEFAULT;
+	ibd.ByteWidth = sizeof(WORD) * 6;
+	ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	ibd.CPUAccessFlags = 0;
+	ibd.StructureByteStride = 0;
+	ibd.MiscFlags = 0;
+
+	D3D11_SUBRESOURCE_DATA iinitData;
+	ZeroMemory(&iinitData, sizeof(iinitData));
+	iinitData.pSysMem = indices;
+
+	_pd3dDevice->CreateBuffer(&ibd, &iinitData, &_fullScreenQuadIndexBuffer);
 }
