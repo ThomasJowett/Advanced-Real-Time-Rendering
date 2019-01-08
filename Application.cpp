@@ -72,6 +72,7 @@ Application::Application()
 	_pNormalPixelShader = nullptr;
 	_pVertexLayout = nullptr;
 	_pConstantBuffer = nullptr;
+	_pTessConstantBuffer = nullptr;
 
 	DSLessEqual = nullptr;
 	RSCullNone = nullptr;
@@ -131,6 +132,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Normal.dds", nullptr, &_pNormalGroundTextureRV);
 
 	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\conenormal.dds", nullptr, &_pNormalGroundTextureRV);
+	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\coneHeight.dds", nullptr, &_pHeightGroundTextureRV);
 
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Diffuse.dds", nullptr, &_pDiffuseSpaceManTextureRV);
 	
@@ -181,9 +183,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	Mesh cubeGeometry(GeometryGenerator::CreateCube(1.0f, 1.0f,1.0f),_pd3dDevice);
 
-	Mesh planeGeometry(GeometryGenerator::CreateGrid(25.0f, 25.0f, 50, 50, 2, 2), _pd3dDevice);
+	Mesh planeGeometry(GeometryGenerator::CreateGrid(25.0f, 25.0f, 4, 4, 1.5, 1.5), _pd3dDevice);
 
-	Mesh sphereGeometry(GeometryGenerator::CreateSphere(0.5f, 20.0f, 20.0f), _pd3dDevice);
+	Mesh sphereGeometry(GeometryGenerator::CreateSphere(0.5f, 20, 20), _pd3dDevice);
 
 	Mesh cylinderGeometry(GeometryGenerator::CreateCylinder(0.5f,0.5f,1.0f, 20, 2), _pd3dDevice);
 
@@ -222,6 +224,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	gameObject->SetTextureRV(_pHeightGroundTextureRV, TX_HEIGHTMAP);
 	
 	gameObject->SetShaderToUse(FX_PARRALAXED_OCCLUSION);
+	//gameObject->SetShaderToUse(FX_PARRALAXED);
+	//gameObject->SetShaderToUse(FX_DISPLACEMENT);
+	//gameObject->SetShaderToUse(FX_WIREFRAME);
 	
 	_gameObjects.push_back(gameObject);
 
@@ -231,7 +236,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	gameObject->SetTextureRV(_pDiffuseCrateTextureRV, TX_DIFFUSE);
 	gameObject->SetTextureRV(_pNormalCrateTextureRV, TX_NORMAL);
 	gameObject->SetTextureRV(_pHeightCrateTextureRV, TX_HEIGHTMAP);
-	gameObject->SetShaderToUse(FX_PARRALAXED);
+	//gameObject->SetShaderToUse(FX_PARRALAXED);
+	//gameObject->SetShaderToUse(FX_DISPLACEMENT);
 	
 	_gameObjects.push_back(gameObject);
 	
@@ -260,16 +266,16 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 		transform = new Transform(position, Vector3D(0.0f, 0.0f, 0.0f), Vector3D(1.0f, 1.0f, 1.0f));
 		if (i == 1)
 		{
-			gameObject = new GameObject("Cylinder " + i, transform, cylinderGeometry, shinyMaterial);
+			gameObject = new GameObject("Cylinder " + std::to_string(i), transform, cylinderGeometry, shinyMaterial);
 		}
 		else if (i == 2)
 		{
-			gameObject = new GameObject("Sphere " + i, transform, sphereGeometry, shinyMaterial);
+			gameObject = new GameObject("Sphere " + std::to_string(i), transform, sphereGeometry, shinyMaterial);
 		}
 		else if (i == 3)
 		{
 			transform->_rotation = Vector3D(XM_PIDIV2, 0, 0);
-			gameObject = new GameObject("Torus " + i, transform, torusGeometry, shinyMaterial);
+			gameObject = new GameObject("Torus " + std::to_string(i), transform, torusGeometry, shinyMaterial);
 			gameObject->SetShaderToUse(FX_BLOCK_COLOUR);
 		}
 		else if (i == 4)
@@ -279,7 +285,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 		}
 		else
 		{
-			gameObject = new GameObject("Cube " + i, transform, cubeGeometry, shinyMaterial);
+			gameObject = new GameObject("Cube " + std::to_string(i), transform, cubeGeometry, shinyMaterial);
 			gameObject->SetShaderToUse(FX_WIREFRAME);
 		}
 		gameObject->SetTextureRV(_pDiffuseStoneTextureRV,TX_DIFFUSE);
@@ -292,7 +298,6 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	//Create the shadow map
 	_pShadowMap = new ShadowMap(_pd3dDevice, _shadowMapWidth, _shadowMapHeight);
 	_pSSAO = new SSAO(_pd3dDevice, _pImmediateContext, _renderWidth, _renderHeight, _camera->GetFovY(), _camera->GetFarDepth());
-
 	return S_OK;
 }
 
@@ -341,6 +346,14 @@ HRESULT Application::InitShadersAndInputLayout()
 	//Compile the SSAO Normal Depth pixel shader
 	hr = CompileShaderFromFile(L"SSAONormalDepth.fx", "SSAONormalDepthPS", "ps_5_0", &pPSBlob);
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pSSAONormalDepthPixelShader);
+
+	//Compile the SSAO Blur vertex shader
+	hr = CompileShaderFromFile(L"SSAOBlur.fx", "BlurVS", "vs_5_0", &pVSBlob);
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pSSAOBlurVertexShader);
+
+	//Compile the SSAO Blur pixel shader
+	hr = CompileShaderFromFile(L"SSAOBlur.fx", "BlurPS", "ps_5_0", &pPSBlob);
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pSSAOBlurPixelShader);
 	
 
     if (FAILED(hr))
@@ -418,7 +431,7 @@ HRESULT Application::InitShadersAndInputLayout()
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		//{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
 	// Create the input layout
@@ -484,7 +497,7 @@ HRESULT Application::InitWindow(HINSTANCE hInstance, int nCmdShow)
 
     // Create window
     _hInst = hInstance;
-    RECT rc = {0, 0, _renderWidth, _renderHeight};
+    RECT rc = {0, 0, (LONG)_renderWidth, (LONG)_renderHeight};
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
     _hWnd = CreateWindow(L"TutorialWindowClass", L"FGGC Semester 2 Framework", WS_OVERLAPPEDWINDOW,
                          CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
@@ -524,8 +537,6 @@ HRESULT Application::CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoin
 		MessageBox(nullptr,
 			L"The FX file cannot compile shader.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
 		return hr;
-
-        return hr;
     }
 
     if (pErrorBlob) pErrorBlob->Release();
@@ -624,6 +635,13 @@ HRESULT Application::InitDevice()
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = 0;
     hr = _pd3dDevice->CreateBuffer(&bd, nullptr, &_pConstantBuffer);
+
+	ZeroMemory(&bd, sizeof(bd));
+	bd.Usage = D3D11_USAGE_DEFAULT;
+	bd.ByteWidth = sizeof(TesselationConstantBuffer);
+	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bd.CPUAccessFlags = 0;
+	hr = _pd3dDevice->CreateBuffer(&bd, nullptr, &_pTessConstantBuffer);
 
     if (FAILED(hr))
         return hr;
@@ -746,6 +764,7 @@ void Application::Cleanup()
 	//if (_pGroundTextureRV) _pGroundTextureRV->Release();
 
     if (_pConstantBuffer) _pConstantBuffer->Release();
+	if (_pTessConstantBuffer) _pTessConstantBuffer->Release();
 
     if (_pVertexLayout) _pVertexLayout->Release();
 	if (_pPostProcessLayout) _pPostProcessLayout->Release();
@@ -813,6 +832,12 @@ void Application::Rotate(int objectNumber)
 	rotation.AddScaledVector(Vector3D(0.0f, 1.0f, 0.0f), 0.01f);
 	rotation.Normalize();
 	_gameObjects[objectNumber]->GetTransform()->_rotation = rotation;
+}
+
+void Application::SetShader(Shader shaderToUse)
+{
+	_gameObjects[0]->SetShaderToUse(shaderToUse);
+	_gameObjects[1]->SetShaderToUse(shaderToUse);
 }
 
 ID3D11RasterizerState * Application::ViewMode()
@@ -937,14 +962,65 @@ void Application::Update(float deltaTime)
 		Rotate(3);
 	}
 
-	if (GetAsyncKeyState('8'))
+	if (GetAsyncKeyState('Q'))
 	{
 		heightMapScale += 0.001f;
 	}
 
-	if (GetAsyncKeyState('9'))
+	if (GetAsyncKeyState('E'))
 	{
 		heightMapScale -= 0.001f;
+	}
+
+	if (GetAsyncKeyState('3'))
+	{
+		SetShader(FX_NORMAL);
+	}
+
+	if (GetAsyncKeyState('4'))
+	{
+		SetShader(FX_PARRALAXED);
+	}
+
+	if (GetAsyncKeyState('5'))
+	{
+		SetShader(FX_PARRALAXED_OCCLUSION);
+	}
+
+	if (GetAsyncKeyState('6'))
+	{
+		SetShader(FX_BLOCK_COLOUR);
+	}
+
+	if (GetAsyncKeyState('7'))
+	{
+		SetShader(FX_DISPLACEMENT);
+	}
+
+	if (GetAsyncKeyState('8'))
+	{
+		SetShader(FX_WIREFRAME);
+	}
+
+	if (GetAsyncKeyState(VK_F4) & 0x8000)//F1
+	{
+		textureToShow = 0;
+	}
+	else if (GetAsyncKeyState(VK_F5) & 0x8000)//F2
+	{
+		textureToShow = 1;
+	}
+	else if (GetAsyncKeyState(VK_F6) & 0x8000)//F3
+	{
+		textureToShow = 2;
+	}
+	else if (GetAsyncKeyState(VK_F7) & 0x8000)//F3
+	{
+		textureToShow = 3;
+	}
+	else if (GetAsyncKeyState(VK_F8) & 0x8000)//F3
+	{
+		textureToShow = 4;
 	}
 
 	// Update camera
@@ -996,8 +1072,16 @@ void Application::Draw()
 
 	_pImmediateContext->VSSetShader(_pSSAOVertexShader, nullptr, 0);
 	_pImmediateContext->PSSetShader(_pSSAOPixelShader, nullptr, 0);
+	_pImmediateContext->HSSetShader(nullptr, nullptr, 0);
+	_pImmediateContext->DSSetShader(nullptr, nullptr, 0);
+
+	_pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
 
 	_pSSAO->ComputeSSAO(_camera);
+
+	_pImmediateContext->VSSetShader(_pSSAOBlurVertexShader, nullptr, 0);
+	_pImmediateContext->PSSetShader(_pSSAOBlurPixelShader, nullptr, 0);
+
 	//_pSSAO->BlurAmbientMap(4);
 
 	//Set the view port
@@ -1024,6 +1108,10 @@ void Application::Draw()
 
 	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	_pImmediateContext->HSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	_pImmediateContext->DSSetConstantBuffers(0, 1, &_pConstantBuffer);
+
+
 	_pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
 	_pImmediateContext->PSSetSamplers(1, 1, &_pSamplerShadow);
 	_pImmediateContext->DSSetSamplers(0, 1, &_pSamplerLinear);
@@ -1040,7 +1128,7 @@ void Application::Draw()
 	cb.View = XMMatrixTranspose(view);
 	cb.Projection = XMMatrixTranspose(projection);
 	cb.ShadowTransform = XMMatrixTranspose(shadowTransform);
-	
+
 	cb.light = basicLight;
 	cb.EyePosW = _camera->GetPosition();
 
@@ -1119,6 +1207,7 @@ void Application::Draw()
 
 			break;
 		case FX_WIREFRAME:
+
 			_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
 			_pImmediateContext->HSSetShader(_pHullShader, nullptr, 0);
 			_pImmediateContext->DSSetShader(_pDomainShader, nullptr, 0);
@@ -1127,6 +1216,10 @@ void Application::Draw()
 			_pImmediateContext->PSSetShader(_pTesselationPixelShader, nullptr, 0);
 			break;
 		case FX_DISPLACEMENT:
+			
+			
+			//_pImmediateContext->UpdateSubresource(_pTessConstantBuffer, 0, nullptr, &Tesscb, 0, 0);
+			//
 			_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
 			_pImmediateContext->HSSetShader(_pHullShader, nullptr, 0);
 			_pImmediateContext->DSSetShader(_pDisplacementDomainShader, nullptr, 0);
@@ -1137,7 +1230,7 @@ void Application::Draw()
 			textureRV = gameObject->GetTextureRV(TX_NORMAL);
 			_pImmediateContext->PSSetShaderResources(1, 1, &textureRV);
 			textureRV = gameObject->GetTextureRV(TX_HEIGHTMAP);
-			_pImmediateContext->PSSetShaderResources(2, 1, &textureRV);
+			_pImmediateContext->DSSetShaderResources(2, 1, &textureRV);
 			break;
 		case FX_SKY:
 			break;
@@ -1166,13 +1259,17 @@ void Application::Draw()
 	
 	_pImmediateContext->IASetInputLayout(_pPostProcessLayout);
 
-	textureRV = _RTTshaderResourceView;
-	//textureRV = _pSSAO->NormalDepthSRV();
-	textureRV = _pSSAO->AmbientSRV();
-	//textureRV = _pSSAO->RandomVectorSRV();
-	//textureRV = _pShadowMap->GetShaderResourceView();
+
+	if(textureToShow == 0) textureRV = _RTTshaderResourceView;
+	
+	if(textureToShow == 1) textureRV = _pSSAO->NormalDepthSRV();
+	if (textureToShow == 2) textureRV = _pSSAO->AmbientSRV();
+	if (textureToShow == 3) textureRV = _pSSAO->RandomVectorSRV();
+	if (textureToShow == 4) textureRV = _pShadowMap->GetShaderResourceView();
 	_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
-	_pImmediateContext->PSSetShaderResources(1, 1, &_pVingetteTextureRV);
+	textureRV = _pSSAO->AmbientSRV();
+	//_pImmediateContext->PSSetShaderResources(1, 1, &_pVingetteTextureRV);
+	_pImmediateContext->PSSetShaderResources(1, 1, &textureRV);
 	_pImmediateContext->VSSetShader(_pPassThroughVertexShader, nullptr, 0);
 	_pImmediateContext->PSSetShader(_pNoPostProcessPixelShader, nullptr, 0);
 	_pImmediateContext->HSSetShader(nullptr, nullptr, 0);

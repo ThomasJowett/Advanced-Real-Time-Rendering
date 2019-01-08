@@ -45,27 +45,37 @@ cbuffer ConstantBuffer : register(b0)
     int MaxSamples;
     int MinSamples;
 }
+cbuffer TessConstantBuffer : register(b1)
+{
+    float MaxTessDistance = 100.0f;
+    float MinTessDistance = 1.0f;
+    float MinTessFactor = 1.0f;
+    float MaxTessFactor = 64.0f;
+}
+
 struct PS_INPUT
 {
-    float4 Pos : SV_POSITION;
-    float3 Norm : NORMAL;
-    float3 worldPos : POSITION;
+    float4 PosH : SV_POSITION;
+    float4 PosW : POSITION;
+    float3 NormW : NORMAL;
+    float3 TangentW : TANGENT;
     float2 Tex : TEXCOORD0;
 };
 
 struct PS_DISPLACEMENT_INPUT
 {
     float4 PosH : SV_POSITION;
+    float3 PosW : POSITION0;
     float3 NormW : NORMAL;
-    float3 LightVecT : POSITION0;
-    float3 EyeVecT : POSITION1;
+    float3 LightVecT : POSITION1;
+    float3 EyeVecT : POSITION2;
     float2 Tex : TEXCOORD0;
     float4 ShadowPosH : TEXCOORD1;
 };
 
 struct VS_INPUT
 {
-    float4 PosL : POSITION0;
+    float4 PosL : POSITION;
     float3 NormL : NORMAL;
     float3 Tangent : TANGENT;
     float2 Tex : TEXCOORD0;
@@ -74,10 +84,11 @@ struct VS_INPUT
 struct HS_IO
 {
     float4 Pos : POSITION0;
-    float4 worldPos : POSITION1;
+    float3 worldPos : POSITION1;
     float3 Norm : NORMAL;
     float3 Tangent : TANGENT;
     float2 Tex : TEXCOORD0;
+    float TessFactor : TESS;
 };
 
 //Helper function that calculate if the pixel is a shadow
@@ -119,14 +130,27 @@ HS_IO TesselationVS(VS_INPUT input)
 
     output.Pos = input.PosL;
 
-    output.worldPos = mul(input.PosL, World);
+    output.worldPos = mul(input.PosL, World).xyz;
 
     float3 normalW = mul(float4(input.NormL, 0.0f), World).xyz;
     output.Norm = normalize(normalW);
 
-    output.Tangent = input.Tangent;
+
+    output.Tangent = mul(input.Tangent, (float3x3) World);
 
     output.Tex = input.Tex;
+
+    float dist = distance( EyePosW, output.worldPos);
+
+    //float tess = saturate((MinTessDistance - dist) / (MinTessDistance - MaxTessDistance));
+    float tess = saturate(dist / 25.0f);
+
+    tess = 1.0f - tess;
+
+    //output.TessFactor = MinTessFactor + tess * (MaxTessFactor - MinTessFactor);
+    output.TessFactor = 0.1f + (tess * 64.0f);
+
+   
 
     return output;
 }
@@ -135,7 +159,7 @@ HS_IO TesselationVS(VS_INPUT input)
 [partitioning("fractional_even")]
 [outputtopology("triangle_cw")]
 [outputcontrolpoints(3)]
-[patchconstantfunc("PassThroughConstantHS")]
+[patchconstantfunc("PatchHS")]
 [maxtessfactor(64.0)]
 
 HS_IO MainHS(InputPatch<HS_IO, 3> ip, uint i : SV_OutputControlPointID, uint PatchID : SV_PrimitiveID)
@@ -157,14 +181,13 @@ struct HS_CONSTANT_DATA_OUTPUT
     float Inside : SV_InsideTessFactor;
 };
 
-HS_CONSTANT_DATA_OUTPUT PassThroughConstantHS(InputPatch<HS_IO, 3> ip, uint PatchID : SV_PrimitiveID)
+HS_CONSTANT_DATA_OUTPUT PatchHS(InputPatch<HS_IO, 3> ip, uint PatchID : SV_PrimitiveID)
 {
-    float tesselationFactor = 64.0f;
     HS_CONSTANT_DATA_OUTPUT output;
-    output.Edges[0] = tesselationFactor;
-    output.Edges[1] = tesselationFactor;
-    output.Edges[2] = tesselationFactor;
-    output.Inside = tesselationFactor;
+    output.Edges[0] = 0.5f * (ip[1].TessFactor + ip[2].TessFactor);
+    output.Edges[1] = 0.5f * (ip[2].TessFactor + ip[0].TessFactor);
+    output.Edges[2] = 0.5f * (ip[0].TessFactor + ip[1].TessFactor);
+    output.Inside = output.Edges[0];
     return output;
 }
 
@@ -175,31 +198,29 @@ PS_INPUT DSMAIN(HS_CONSTANT_DATA_OUTPUT input, float3 BarycentricCoordinates : S
     PS_INPUT output;
 
 	//Interpolate world space position with barycentric coordinates
-    float3 vWorldPos = BarycentricCoordinates.x * TrianglePatch[0].Pos
+    float4 Pos = BarycentricCoordinates.x * TrianglePatch[0].Pos
 		+ BarycentricCoordinates.y * TrianglePatch[1].Pos
 		+ BarycentricCoordinates.z * TrianglePatch[2].Pos;
 
-    output.Pos = float4(vWorldPos.xyz, 1.0);
+    output.PosH = float4(Pos.xyz, 1.0);
 
-    float2 vTex = BarycentricCoordinates.x * TrianglePatch[0].Tex
+    output.Tex = BarycentricCoordinates.x * TrianglePatch[0].Tex
 		+ BarycentricCoordinates.y * TrianglePatch[1].Tex
 		+ BarycentricCoordinates.z * TrianglePatch[2].Tex;
 
-    output.Tex = vTex;
-
-    output.Norm = BarycentricCoordinates.x * TrianglePatch[0].Norm
+    output.NormW = BarycentricCoordinates.x * TrianglePatch[0].Norm
 		+ BarycentricCoordinates.y * TrianglePatch[1].Norm
 		+ BarycentricCoordinates.z * TrianglePatch[2].Norm;
 
-    vWorldPos = BarycentricCoordinates.x * TrianglePatch[0].worldPos
+    float3 vWorldPos = BarycentricCoordinates.x * TrianglePatch[0].worldPos
 		+ BarycentricCoordinates.y * TrianglePatch[1].worldPos
 		+ BarycentricCoordinates.z * TrianglePatch[2].worldPos;
 
-    output.worldPos = float4(vWorldPos.xyz, 1.0);
+    output.PosW = float4(vWorldPos.xyz, 1.0);
 
-    output.Pos = mul(output.Pos, World);
-    output.Pos = mul(output.Pos, View);
-    output.Pos = mul(output.Pos, Projection);
+    output.PosH = mul(output.PosH, World);
+    output.PosH = mul(output.PosH, View);
+    output.PosH = mul(output.PosH, Projection);
 
     return output;
 }
@@ -210,25 +231,17 @@ PS_DISPLACEMENT_INPUT DisplacementDS(HS_CONSTANT_DATA_OUTPUT input, float3 Baryc
     PS_DISPLACEMENT_INPUT output;
 
 	//Interpolate world space position with barycentric coordinates
-    float3 vWorldPos = BarycentricCoordinates.x * TrianglePatch[0].Pos
-		+ BarycentricCoordinates.y * TrianglePatch[1].Pos
-		+ BarycentricCoordinates.z * TrianglePatch[2].Pos;
+     output.PosW = BarycentricCoordinates.x * TrianglePatch[0].worldPos
+		+ BarycentricCoordinates.y * TrianglePatch[1].worldPos
+		+ BarycentricCoordinates.z * TrianglePatch[2].worldPos;
 
-    //output.PosH = float4(vWorldPos.xyz, 1.0);
-
-    float2 vTex = BarycentricCoordinates.x * TrianglePatch[0].Tex
+    output.Tex = BarycentricCoordinates.x * TrianglePatch[0].Tex
 		+ BarycentricCoordinates.y * TrianglePatch[1].Tex
 		+ BarycentricCoordinates.z * TrianglePatch[2].Tex;
-
-    output.Tex = vTex;
 
     output.NormW = BarycentricCoordinates.x * TrianglePatch[0].Norm
 		+ BarycentricCoordinates.y * TrianglePatch[1].Norm
 		+ BarycentricCoordinates.z * TrianglePatch[2].Norm;
-
-    //vWorldPos = BarycentricCoordinates.x * TrianglePatch[0].worldPos
-	//	+ BarycentricCoordinates.y * TrianglePatch[1].worldPos
-	//	+ BarycentricCoordinates.z * TrianglePatch[2].worldPos;
 
     float3 Tangent = BarycentricCoordinates.x * TrianglePatch[0].Tangent
 		+ BarycentricCoordinates.y * TrianglePatch[1].Tangent
@@ -236,13 +249,11 @@ PS_DISPLACEMENT_INPUT DisplacementDS(HS_CONSTANT_DATA_OUTPUT input, float3 Baryc
 
     float displacement = txDisplacement.SampleLevel(samLinear, output.Tex, 0.0f).r;
 
-    displacement *= HeightMapScale;
+    output.PosW += (HeightMapScale * (displacement - 1.0)) * output.NormW;
 
-    vWorldPos += (-output.NormW) * displacement;
+    output.PosH = float4(output.PosW, 1.0);
 
-    output.PosH = float4(vWorldPos.xyz, 1.0);
-
-    output.PosH = mul(output.PosH, World);
+    //output.PosH = mul(output.PosH, World);
     output.PosH = mul(output.PosH, View);
     output.PosH = mul(output.PosH, Projection);
 
@@ -251,14 +262,14 @@ PS_DISPLACEMENT_INPUT DisplacementDS(HS_CONSTANT_DATA_OUTPUT input, float3 Baryc
     tbnMatrix[1] = normalize(mul(float4(cross(output.NormW, Tangent), 0.0f), World).xyz);
     tbnMatrix[2] = normalize(output.NormW);
 
-    float3 EyeVecW = (EyePosW - vWorldPos).xyz;
+    float3 EyeVecW = (EyePosW - output.PosW).xyz;
 	
     float3 LightVecW = (light.LightDir).xyz;
 
     output.LightVecT = normalize(mul(tbnMatrix, LightVecW));
     output.EyeVecT = normalize(mul(tbnMatrix, EyeVecW));
 
-    output.ShadowPosH = mul(float4(vWorldPos.xyz, 1.0), ShadowTransform);
+    output.ShadowPosH = mul(float4(output.PosW.xyz, 1.0), ShadowTransform);
 
     return output;
 }

@@ -72,6 +72,12 @@
     <FxCompile Include="SSAONormalDepth.fx">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="G-Buffer.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="SSAOBlur.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Resources\Crate_SPEC.dds">

@@ -73,4 +73,5 @@ private:
 	ID3D11SamplerState * _pSamplerLinear;
 
 	ID3D11Buffer * _pConstantBuffer;
+	ID3D11Buffer * _pBlurConstantBuffer;
 };

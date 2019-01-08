@@ -3,6 +3,8 @@
 #include <directxmath.h>
 #include <d3d11_1.h>
 #include <vector>
+#include <Windows.h>
+#include <cstdarg>
 
 using namespace DirectX;
 
@@ -73,6 +75,14 @@ __declspec(align(16)) struct ConstantBuffer
 	int MinSamples;
 };
 
+__declspec(align(16)) struct TesselationConstantBuffer
+{
+	float MaxTessDistance;
+	float MinTessDistance;
+	float MinTessFactor;
+	float MaxTessFactor;
+};
+
 const int c_MaxSamples = 16;
 
 __declspec(align(16)) struct PostProcessConstantBuffer
@@ -94,23 +104,24 @@ __declspec(align(16)) struct SSAOConstantBuffer
 	XMFLOAT4 OffsetVectors[14];
 	XMFLOAT4 FrustumCorners[4];
 
-	FLOAT OcclusionRadius = 0.05f;
+	FLOAT OcclusionRadius = 0.3f;
 	FLOAT OcculsionFadeStart = 0.2f;
-	FLOAT OcclusionFadeEnd = 20.0f;
+	FLOAT OcclusionFadeEnd = 2.0f;
 	FLOAT SurfaceEpsilon = 0.05f;
 
 	INT SampleCount = 14;
 };
 
-__declspec(align(16)) struct SSAONormalDepthConstantBuffer
+__declspec(align(16)) struct SSAOBlurConstantBuffer
 {
-	XMMATRIX WorldView;
-	XMMATRIX WorldInvTransposeView;
-	XMMATRIX WorldViewProjection;
-	XMMATRIX TexTransform;
-	//XMMATRIX World;
-	//XMMATRIX View;
-	//XMMATRIX Projection;
+	FLOAT TexelWidth;
+	FLOAT TexelHeight;
+
+	FLOAT Weights[11] = 
+	{
+		0.05f, 0.05f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.05f, 0.05f
+	};
+	BOOL HorizontalBlur;
 };
 
 struct IndexedModel
@@ -119,17 +130,32 @@ struct IndexedModel
 	std::vector<WORD> Indices;
 };
 
-namespace MathHelper
+namespace Debug
 {
-	static XMMATRIX InverseTranspose(CXMMATRIX M)
-	{
-		// Inverse-transpose is just applied to normals.  So zero out 
-		// translation row so that it doesn't get into our inverse-transpose
-		// calculation--we don't want the inverse-transpose of the translation.
-		XMMATRIX A = M;
-		A.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-		XMVECTOR det = XMMatrixDeterminant(A);
+#define DBG_OUTPUT(...) Debug::Output(__FILE__, __LINE__, __VA_ARGS__)
+#define OUTPUT(...) Debug::Output(__VA_ARGS__)
 
-		return XMMatrixTranspose(XMMatrixInverse(&det, A));
+	static void Output(WCHAR* pFormat, ...)
+	{
+		WCHAR buffer[1024] = { 0 };
+		va_list args;
+		va_start(args, pFormat);
+		wvsprintf(buffer, pFormat, args);
+		va_end(args);
+
+		OutputDebugString(buffer);
 	}
-}
+
+	static void Output(const char* file, const int line, WCHAR *pFormat, ...)
+	{
+		WCHAR buffer[1024] = { 0 };
+		int stringLength = wsprintf(buffer, L"%hs(%d): ", file, line);
+
+		va_list args;
+		va_start(args, pFormat);
+		wvsprintf(buffer + stringLength, pFormat, args);
+		va_end(args);
+
+		OutputDebugString(buffer);
+	}
+};

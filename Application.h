@@ -59,6 +59,8 @@ private:
 	ID3D11PixelShader*      _pSSAOPixelShader;
 	ID3D11VertexShader*     _pSSAONormalDepthVertexShader;
 	ID3D11PixelShader*      _pSSAONormalDepthPixelShader;
+	ID3D11VertexShader*     _pSSAOBlurVertexShader;
+	ID3D11PixelShader*      _pSSAOBlurPixelShader;
 
 	ID3D11HullShader*		_pHullShader = nullptr;
 	ID3D11DomainShader*		_pDomainShader = nullptr;
@@ -74,6 +76,7 @@ private:
 	Mesh*					_fullscreenQuad;
 
 	ID3D11Buffer*           _pConstantBuffer;
+	ID3D11Buffer*			_pTessConstantBuffer;
 
 	ID3D11DepthStencilView*		_depthStencilView = nullptr;
 	ID3D11Texture2D*			_depthStencilBuffer = nullptr;
@@ -139,6 +142,7 @@ private:
 
 	void moveForward(int objectNumber);
 	void Rotate(int objectNumber);
+	void SetShader(Shader shaderToUse);
 
 	ID3D11RasterizerState* ViewMode();
 
@@ -146,7 +150,9 @@ private:
 	void DrawSceneToSSAODepthMap();
 
 	float counter = 0.01f;
-	float heightMapScale = 0.01f;
+	float heightMapScale = 0.04f;
+
+	int textureToShow = 0;
 
 public:
 	Application();

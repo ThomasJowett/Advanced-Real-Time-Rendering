@@ -97,13 +97,13 @@ public:
 	//from a vector of 3 euler angles in radians
 	Quaternion(const Vector3D angles)
 	{
-		float cos_x_2 = cosf(0.5*angles.x);
-		float cos_y_2 = cosf(0.5*angles.y);
-		float cos_z_2 = cosf(0.5*angles.z);
+		float cos_x_2 = cosf(0.5f*angles.x);
+		float cos_y_2 = cosf(0.5f*angles.y);
+		float cos_z_2 = cosf(0.5f*angles.z);
 
-		float sin_x_2 = sinf(0.5*angles.x);
-		float sin_y_2 = sinf(0.5*angles.y);
-		float sin_z_2 = sinf(0.5*angles.z);
+		float sin_x_2 = sinf(0.5f*angles.x);
+		float sin_y_2 = sinf(0.5f*angles.y);
+		float sin_z_2 = sinf(0.5f*angles.z);
 
 		// and now compute quaternion
 		r = cos_z_2 * cos_y_2*cos_x_2 + sin_z_2 * sin_y_2*sin_x_2;
@@ -291,9 +291,9 @@ public:
 		}
 		else
 		{
-			axis.x = i / s;
-			axis.y = j / s;
-			axis.z = k / s;
+			axis.x = i / (float)s;
+			axis.y = j / (float)s;
+			axis.z = k / (float)s;
 		}
 	}
 

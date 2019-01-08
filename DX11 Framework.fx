@@ -6,6 +6,7 @@ Texture2D txDiffuse : register(t0);
 Texture2D txNormal : register(t1);
 Texture2D txHeight : register(t2);
 Texture2D txShadow : register(t3);
+Texture2D txSSAO : register(t4);
 
 SamplerState samLinear : register(s0);
 
@@ -193,7 +194,7 @@ float4 NormalPS(VS_OUTPUT_NORMAL input) : SV_Target
 
 	//Expand the range of the normal value from (0, +1) to (-1, +1)
 	bumpMap = (bumpMap * 2.0f) -1.0f;
-	float3 bumpedNormalW = NormalSampleToWorldSpace(bumpMap.xyz, input.NormW, input.TangentW);
+	float3 bumpedNormalW = NormalSampleToWorldSpace(bumpMap.xyz, input.NormW, input.TangentW.xyz);
 
 	float3 ambient = float3(0.0f, 0.0f, 0.0f);
 	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
@@ -278,7 +279,7 @@ VS_OUTPUT_SIMPLE_PARRALAX SimpleParralaxVS(VS_INPUT input)
 	float3 LightVecW = (light.LightDir).xyz;
 
 	output.LightVecT = normalize(mul(tbnMatrix, LightVecW));
-	output.EyeVecT = normalize(mul(tbnMatrix, EyeVecW));
+	output.EyeVecT = mul(tbnMatrix, EyeVecW);
 
 	output.ShadowPosH = mul(posW, ShadowTransform);
 
@@ -292,13 +293,14 @@ float4 SimpleParralaxPS(VS_OUTPUT_SIMPLE_PARRALAX input) : SV_Target
 {
 	float3 toEye = normalize(input.EyeVecT);
 
-	float2 offsetDir = normalize(toEye.xy);
+	float2 offsetDir = toEye.xy;
 
 	float height = txHeight.Sample(samLinear, input.Tex).r;
 	height = (height * HeightMapScale * 2.0f) - HeightMapScale;
 
 	float2 FinalCoords = input.Tex + (offsetDir * height);
-	float4 textureColour = txDiffuse.Sample(samLinear, FinalCoords);
+
+    float4 textureColour = txDiffuse.Sample(samLinear, FinalCoords);
 	float4 bumpMap = txNormal.Sample(samLinear, FinalCoords);
 
 	//Expand the range of the normal value from (0, +1) to (-1, +1)
@@ -370,7 +372,7 @@ VS_OUTPUT_PARRALAX ParralaxVS(VS_INPUT input)
 	float3 LightVecW = (light.LightDir).xyz;
 
 	output.LightVecT = normalize(mul(tbnMatrix, LightVecW));
-	output.EyeVecT = normalize(mul(tbnMatrix, EyeVecW));
+	output.EyeVecT = mul(tbnMatrix, EyeVecW);
 
 	output.ShadowPosH = mul(posW, ShadowTransform);
 
@@ -387,7 +389,7 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 	parralaxLimit *= HeightMapScale;
 	
 	float2 offsetDir = normalize(toEye.xy);
-	float2 maxOffset = offsetDir * parralaxLimit;
+    float2 maxOffset = offsetDir * parralaxLimit;
 	
 	float3 normalW = normalize(input.NormW);
 	float3 toEyeW = normalize(EyePosW - input.PosW);
@@ -433,9 +435,35 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 			LastSampledHeight = CurrSampledHeight;
 		}
 	}
-	
-	float2 FinalCoords = input.Tex + CurrOffset;
 
+    float2 FinalCoords = input.Tex + CurrOffset;
+
+    float3 lightLecNorm = normalize(input.LightVecT);
+    
+    float parralaxedShadow = 1.0f;
+    CurrRayHeight = txHeight.SampleGrad(samLinear, FinalCoords, dx, dy).r;
+    CurrOffset = float2(0.0f, 0.0f);
+    StepSize = 0.001f;
+
+    parralaxLimit = -length(lightLecNorm.xy) / lightLecNorm.z;
+    parralaxLimit *= HeightMapScale;
+
+    offsetDir = -normalize(lightLecNorm.xy);
+    maxOffset = offsetDir * parralaxLimit;
+    
+    while(CurrRayHeight < 1.0f)
+    {
+        CurrSampledHeight = txHeight.SampleGrad(samLinear, FinalCoords + CurrOffset, dx, dy).r;
+        if(CurrSampledHeight > CurrRayHeight)
+        {
+            parralaxedShadow -= 0.01f;
+        }
+        CurrRayHeight += StepSize;
+    
+        CurrOffset += StepSize * maxOffset;
+    }
+    
+   // return float4(parralaxedShadow, parralaxedShadow, parralaxedShadow, 1.0f);
 	// Get texture data from file
 	float4 textureColour = txDiffuse.Sample(samLinear, FinalCoords);
 	float4 bumpMap = txNormal.Sample(samLinear, FinalCoords);
@@ -448,9 +476,9 @@ float4 ParralaxPS(VS_OUTPUT_PARRALAX input) : SV_Target
 	float3 specular = float3(0.0f, 0.0f, 0.0f);
 
 	float shadow = CalcShadowFactor(input.ShadowPosH);
-	
-	//float3 lightLecNorm = normalize(light.LightPosW - input.PosW);
-	float3 lightLecNorm = normalize(input.LightVecT);
+
+    shadow *= parralaxedShadow;
+    
 	// Compute Colour
 
 	// Compute the reflection vector.

@@ -2,7 +2,8 @@
 // File: SSAONormalDepth.fx
 //--------------------------------------------------------------------------------------
 
-Texture2D txNormal : register(t0);
+Texture2D txDiffuse : register(t0);
+Texture2D txNormal : register(t1);
 
 cbuffer ConstantBuffer : register(b0)
 {
@@ -10,16 +11,6 @@ cbuffer ConstantBuffer : register(b0)
     matrix View;
     matrix Projection;
 }
-//cbuffer ConstantBuffer : register(b0)
-//{
-//    matrix WorldView;
-//    matrix WorldInvTransposeView;
-//    matrix WorldViewProjection;
-//    matrix TexTransform;
-//   // matrix World;
-//   // matrix View;
-//   // matrix Projection;
-//}
 
 struct VS_INPUT
 {

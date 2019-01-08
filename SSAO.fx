@@ -35,7 +35,7 @@ struct VS_INPUT
 {
     float3 PosH : POSITION;
     float3 ToFarPlaneIndex : NORMAL;
-    float2 Tex : TEXCOORD;
+    //float2 Tex : TEXCOORD;
 };
 
 struct VS_OUTPUT
@@ -53,7 +53,7 @@ VS_OUTPUT SSAOVS(VS_INPUT input)
 
     output.ToFarPlane = FrustumCorners[input.ToFarPlaneIndex.x].xyz;
 
-    output.Tex = input.Tex;
+    //output.Tex = input.Tex;
 
     output.Tex = input.ToFarPlaneIndex.yz;
     return output;
@@ -107,6 +107,7 @@ float4 SSAOPS(VS_OUTPUT input) : SV_Target
     float3 n = normalDepth.xyz;
     float pz = normalDepth.w;
 
+    
 	//
 	// Reconstruct full view space position (x,y,z).
 	// Find t such that p = t*input.ToFarPlane.
@@ -115,8 +116,6 @@ float4 SSAOPS(VS_OUTPUT input) : SV_Target
 	//
     float3 p = (pz / input.ToFarPlane.z) * input.ToFarPlane;
 
-    return float4(input.ToFarPlane.zzz /100, 1.0f);
-	
 	// Extract random vector and map from [0,1] --> [-1, +1].
     float3 randVec = 2.0f * txRandomVectorMap.SampleLevel(samRandomVec, 4.0f * input.Tex, 0.0f).rgb - 1.0f;
     

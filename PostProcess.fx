@@ -55,8 +55,7 @@ float4 NoPostProcessPS(VS_OUTPUT input) : SV_Target
 	float4 vingetteColour = vingette.Sample(samLinear, input.Tex);
 
 	float4 finalColour = lerp(0.0f, textureColour, vingetteColour + 0.5f);
-	//finalColour += vingetteColour/2;
-    return textureColour;
+    return finalColour;
 }
 
 //------------------------------------------------------------------------------------
