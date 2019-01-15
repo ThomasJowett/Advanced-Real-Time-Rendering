@@ -494,6 +494,9 @@
     <Image Include="Resources\Stone_Diffuse.dds" />
     <Image Include="Resources\Stone_Normal.dds" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>

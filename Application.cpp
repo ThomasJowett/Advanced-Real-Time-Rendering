@@ -1132,7 +1132,7 @@ void Application::Draw()
 	cb.light = basicLight;
 	cb.EyePosW = _camera->GetPosition();
 
-	cb.HeightMapScale = 0.01f;
+	//cb.HeightMapScale = 0.01f;
 	cb.MaxSamples = 1000;
 	cb.MinSamples = 1;
 
@@ -1217,7 +1217,7 @@ void Application::Draw()
 			break;
 		case FX_DISPLACEMENT:
 			
-			
+			cb.HeightMapScale = heightMapScale;
 			//_pImmediateContext->UpdateSubresource(_pTessConstantBuffer, 0, nullptr, &Tesscb, 0, 0);
 			//
 			_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
