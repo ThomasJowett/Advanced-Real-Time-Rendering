@@ -29,7 +29,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 bool Application::HandleKeyboard(MSG msg)
 {
-	XMFLOAT3 cameraPosition = _camera->GetPosition();
+	//XMFLOAT3 cameraPosition = _camera->GetPosition();
 
 	switch (msg.wParam)
 	{
@@ -183,7 +183,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	Mesh cubeGeometry(GeometryGenerator::CreateCube(1.0f, 1.0f,1.0f),_pd3dDevice);
 
-	Mesh planeGeometry(GeometryGenerator::CreateGrid(25.0f, 25.0f, 4, 4, 1.5, 1.5), _pd3dDevice);
+	Mesh planeGeometry(GeometryGenerator::CreateGrid(250.0f, 250.0f, 40, 40, 15, 15), _pd3dDevice);
 
 	Mesh sphereGeometry(GeometryGenerator::CreateSphere(0.5f, 20, 20), _pd3dDevice);
 

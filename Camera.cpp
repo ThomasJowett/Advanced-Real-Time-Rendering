@@ -6,6 +6,8 @@ Camera::Camera(XMFLOAT3 position, XMFLOAT3 at, XMFLOAT3 up, FLOAT windowWidth, F
 	Update();
 
 	_fovY = 0.25f * XM_PI;
+
+	//SetRight()
 }
 
 Camera::~Camera()
@@ -19,6 +21,7 @@ void Camera::Update()
 	XMFLOAT4 eye = XMFLOAT4(_eye.x, _eye.y, _eye.z, 1.0f);
 	XMFLOAT4 at = XMFLOAT4(_at.x, _at.y, _at.z, 1.0f);
 	XMFLOAT4 up = XMFLOAT4(_up.x, _up.y, _up.z, 0.0f);
+
 
 	XMVECTOR EyeVector = XMLoadFloat4(&eye);
 	XMVECTOR AtVector = XMLoadFloat4(&at);
@@ -36,6 +39,29 @@ void Camera::Reshape(FLOAT windowWidth, FLOAT windowHeight, FLOAT nearDepth, FLO
 	_windowHeight = windowHeight;
 	_nearDepth = nearDepth;
 	_farDepth = farDepth;
+}
+
+void Camera::MoveForward(float scale)
+{
+	XMFLOAT3 s = XMFLOAT3(scale, scale, scale);
+
+}
+
+void Camera::MoveRight(float scale)
+{
+
+}
+
+void Camera::MoveUp(float scale)
+{
+}
+
+void Camera::Pitch(float angle)
+{
+}
+
+void Camera::Yaw(float angle)
+{
 }
 
 XMFLOAT4X4 Camera::GetViewProjection() const 
