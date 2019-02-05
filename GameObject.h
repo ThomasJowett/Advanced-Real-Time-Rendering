@@ -28,6 +28,7 @@ enum Shader
 	FX_WIREFRAME,
 	FX_DISPLACEMENT,
 	FX_GEOMETRY,
+	FX_TERRAIN,
 	FX_SKY
 };
 
@@ -63,7 +64,7 @@ public:
 	void SetParent(GameObject * parent) { _parent = parent; }
 
 	void Update(float deltaTime);
-	void Draw(ID3D11DeviceContext * pImmediateContext);
+	virtual void Draw(ID3D11DeviceContext * pImmediateContext);
 
 private:
 

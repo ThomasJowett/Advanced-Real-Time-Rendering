@@ -141,8 +141,13 @@ float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, floa
 static const float SMAP_SIZE = 4096.0f;
 static const float SMAP_DX = 1.0f / SMAP_SIZE;
 
+//Soft Shadows
 float CalcShadowFactor(float4 shadowPosH)
 {
+    //if pixel is outside the shadowmap projection then return no shadow
+    if(shadowPosH.x > 1.0f || shadowPosH.x < 0.0f || shadowPosH.z > 1.0f || shadowPosH.z < 0.0f ||shadowPosH.y > 1.0f || shadowPosH.y < 0.0f)
+        return 1.0f;
+
 	// Complete projection by doing division by w.
 	shadowPosH.xyz /= shadowPosH.w;
 
@@ -170,8 +175,13 @@ float CalcShadowFactor(float4 shadowPosH)
 	return percentLit /= 9.0f;
 }
 
+//Hard Shadows
 float CalcShadow(float4 shadowPosH)
 {
+    //if pixel is outside the shadowmap projection then return no shadow
+    if (shadowPosH.x > 1.0f || shadowPosH.x < 0.0f || shadowPosH.z > 1.0f || shadowPosH.z < 0.0f || shadowPosH.y > 1.0f || shadowPosH.y < 0.0f)
+        return 1.0f;
+
 	shadowPosH.xyz /= shadowPosH.w;
 
 	float depth = shadowPosH.z - 0.001f;
@@ -200,9 +210,9 @@ float4 NormalPS(VS_OUTPUT_NORMAL input) : SV_Target
 	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
 	float3 specular = float3(0.0f, 0.0f, 0.0f);
 
-	float shadow = CalcShadowFactor(input.ShadowPosH);
+	//float shadow = CalcShadowFactor(input.ShadowPosH);
 
-	//float shadow = CalcShadow(input.ShadowPosH);
+	float shadow = CalcShadow(input.ShadowPosH);
 
 	float3 lightLecNorm = normalize(light.LightDir);
 	// Compute Colour

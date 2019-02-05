@@ -4,6 +4,8 @@
 #include <string>
 #include <math.h>
 
+#include <d3d11_1.h>
+
 class Vector3D
 {
 public:
@@ -19,6 +21,8 @@ public:
 	}
 
 	Vector3D(float x, float y, float z) : x(x), y(y), z(z) {}
+
+	Vector3D(DirectX::XMFLOAT3 float3) :x(float3.x), y(float3.y), z(float3.z) {}
 
 	~Vector3D() = default;
 
@@ -52,7 +56,7 @@ public:
 	}
 
 	//converts vector to a formatted string
-	std::string to_string()
+	std::string const to_string()
 	{
 		return "x: " + std::to_string(x) + " y: " + std::to_string(y) + " z: " + std::to_string(z);
 	}
@@ -94,6 +98,12 @@ public:
 	Vector3D operator*(float scaler)
 	{
 		return Vector3D(x * scaler, y * scaler, z * scaler);
+	}
+
+	//multiplies the two vectors together
+	Vector3D operator*(Vector3D other)
+	{
+		return Vector3D(x*other.x, y*other.y, z*other.z);
 	}
 
 	//divides each component of the vector by the scaler

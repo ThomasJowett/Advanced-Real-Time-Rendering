@@ -39,6 +39,15 @@ struct SimpleVertex
 	};
 };
 
+struct TerrainVertex
+{
+	XMFLOAT3 PosL;
+	XMFLOAT2 Tex;
+	XMFLOAT2 BoundsY;
+
+
+};
+
 struct SurfaceInfo
 {
 	XMFLOAT4 AmbientMtrl;

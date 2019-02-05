@@ -29,6 +29,7 @@
     <ClInclude Include="ShadowMapping.h" />
     <ClInclude Include="Lights.h" />
     <ClInclude Include="SSAO.h" />
+    <ClInclude Include="Terrain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
@@ -42,6 +43,7 @@
     <ClCompile Include="PostProcess.cpp" />
     <ClCompile Include="ShadowMapping.cpp" />
     <ClCompile Include="SSAO.cpp" />
+    <ClCompile Include="Terrain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">
@@ -82,6 +84,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="BasicVertexShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Terrain.fx">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

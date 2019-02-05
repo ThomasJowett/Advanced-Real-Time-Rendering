@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "GeometryGenerator.h"
+
 #include "ObJLoader.h"
 #include "PostProcess.h"
 #include <iostream>
@@ -27,31 +28,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-bool Application::HandleKeyboard(MSG msg)
+bool Application::HandleKeyboard(MSG msg, float deltaTime)
 {
-	//XMFLOAT3 cameraPosition = _camera->GetPosition();
-
 	switch (msg.wParam)
 	{
-	case VK_UP:
-		_cameraOrbitRadius = max(_cameraOrbitRadiusMin, _cameraOrbitRadius - (_cameraSpeed * 0.2f));
-		return true;
-		break;
 
-	case VK_DOWN:
-		_cameraOrbitRadius = min(_cameraOrbitRadiusMax, _cameraOrbitRadius + (_cameraSpeed * 0.2f));
-		return true;
-		break;
-
-	case VK_RIGHT:
-		_cameraOrbitAngleXZ -= _cameraSpeed;
-		return true;
-		break;
-
-	case VK_LEFT:
-		_cameraOrbitAngleXZ += _cameraSpeed;
-		return true;
-		break;
 	}
 
 	return false;
@@ -183,7 +164,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	Mesh cubeGeometry(GeometryGenerator::CreateCube(1.0f, 1.0f,1.0f),_pd3dDevice);
 
-	Mesh planeGeometry(GeometryGenerator::CreateGrid(250.0f, 250.0f, 40, 40, 15, 15), _pd3dDevice);
+	Mesh planeGeometry(GeometryGenerator::CreateGrid(250.0f, 250.0f, 100, 100, 15, 15), _pd3dDevice);
 
 	Mesh sphereGeometry(GeometryGenerator::CreateSphere(0.5f, 20, 20), _pd3dDevice);
 
@@ -194,6 +175,22 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	Mesh SpaceManGeometry(OBJLoader::Load("Resources\\SpaceMan.obj", true), _pd3dDevice);
 
 	Mesh GunGeometry(OBJLoader::Load("Resources\\Gun.obj", true), _pd3dDevice);
+
+	Terrain::InitInfo tii;
+	tii.HeightMapFilename = L"Resources\\terrain.raw";
+	tii.LayerMapFilename0 = L"Resources\\grass.dds";
+	tii.LayerMapFilename1 = L"Resources\\darkdirt.dss";
+	tii.LayerMapFilename2 = L"Resources\\stone.dss";
+	tii.LayerMapFilename3 = L"Resources\\lightdirt.dds";
+	tii.LayerMapFilename4 = L"Resources\\snow.dds";
+	tii.BlendMapFilename = L"Resources\\blend.dss";
+	tii.HeightScale = 50.0f;
+	tii.HeightMapWidth = 2049;
+	tii.HeightMapHeight = 2049;
+	tii.CellSpacing = 0.5f;
+
+	_terrain.Init(_pd3dDevice, _pImmediateContext, tii);
+
 
 	_fullscreenQuad = new Mesh(GeometryGenerator::CreateFullScreenQuad(), _pd3dDevice);
 
@@ -962,12 +959,12 @@ void Application::Update(float deltaTime)
 		Rotate(3);
 	}
 
-	if (GetAsyncKeyState('Q'))
+	if (GetAsyncKeyState('Z'))
 	{
 		heightMapScale += 0.001f;
 	}
 
-	if (GetAsyncKeyState('E'))
+	if (GetAsyncKeyState('X'))
 	{
 		heightMapScale -= 0.001f;
 	}
@@ -1023,17 +1020,42 @@ void Application::Update(float deltaTime)
 		textureToShow = 4;
 	}
 
+
+	//Control Camera
+	if (GetAsyncKeyState('W') & 0x8000)
+		_camera->MoveForward(_cameraSpeed*deltaTime);
+	if (GetAsyncKeyState('S') & 0x8000)
+		_camera->MoveForward(-_cameraSpeed * deltaTime);
+	if (GetAsyncKeyState('A') & 0x8000)
+		_camera->MoveRight(-_cameraSpeed * deltaTime);
+	if (GetAsyncKeyState('D') & 0x8000)
+		_camera->MoveRight(_cameraSpeed*deltaTime);
+	if (GetAsyncKeyState('E') & 0x8000)
+		_camera->MoveUp(_cameraSpeed*deltaTime);
+	if (GetAsyncKeyState('Q') & 0x8000)
+		_camera->MoveUp(-_cameraSpeed * deltaTime);
+
+	if (GetAsyncKeyState('I') & 0x8000)
+		_camera->Pitch(-_cameraRotaion*deltaTime);
+	if (GetAsyncKeyState('K') & 0x8000)
+		_camera->Pitch(_cameraRotaion * deltaTime);
+	if (GetAsyncKeyState('J') & 0x8000)
+		_camera->Yaw(-_cameraRotaion * deltaTime);
+	if (GetAsyncKeyState('L') & 0x8000)
+		_camera->Yaw(_cameraRotaion*deltaTime);
+
+
 	// Update camera
-	float angleAroundZ = XMConvertToRadians(_cameraOrbitAngleXZ);
+	//float angleAroundZ = XMConvertToRadians(_cameraOrbitAngleXZ);
+	//
+	//float x = _cameraOrbitRadius * cos(angleAroundZ);
+	//float z = _cameraOrbitRadius * sin(angleAroundZ);
+	//
+	//XMFLOAT3 cameraPos = _camera->GetPosition();
+	//cameraPos.x = x;
+	//cameraPos.z = z;
 
-	float x = _cameraOrbitRadius * cos(angleAroundZ);
-	float z = _cameraOrbitRadius * sin(angleAroundZ);
-
-	XMFLOAT3 cameraPos = _camera->GetPosition();
-	cameraPos.x = x;
-	cameraPos.z = z;
-
-	_camera->SetPosition(cameraPos);
+	//_camera->SetPosition(cameraPos);
 	_camera->Update();
 
 	// Update objects
@@ -1233,6 +1255,8 @@ void Application::Draw()
 			_pImmediateContext->DSSetShaderResources(2, 1, &textureRV);
 			break;
 		case FX_SKY:
+			break;
+		case FX_TERRAIN:
 			break;
 		default:
 			break;

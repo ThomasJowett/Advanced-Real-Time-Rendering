@@ -32,7 +32,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 			if (msg.message >= WM_KEYFIRST && msg.message <= WM_KEYLAST)
 			{
-				handled = theApp->HandleKeyboard(msg);
+				handled = theApp->HandleKeyboard(msg, deltaTime);
 			}
 			else if (WM_QUIT == msg.message)
 				break;

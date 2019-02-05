@@ -97,6 +97,12 @@ static const float SMAP_DX = 1.0f / SMAP_SIZE;
 
 float CalcShadowFactor(float4 shadowPosH)
 {
+     //if pixel is outside the shadowmap projection then return no shadow
+    if (shadowPosH.x > 1.0f || shadowPosH.x < 0.0f || shadowPosH.z > 1.0f || shadowPosH.z < 0.0f || shadowPosH.y > 1.0f || shadowPosH.y < 0.0f)
+        return 1.0f;
+
+    return 1.0f;
+
 	// Complete projection by doing division by w.
     shadowPosH.xyz /= shadowPosH.w;
 

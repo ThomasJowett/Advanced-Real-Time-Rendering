@@ -9,6 +9,7 @@
 #include "resource.h"
 #include "Camera.h"
 #include "Commons.h"
+#include "Terrain.h"
 
 #include <vector>
 /*
@@ -103,6 +104,8 @@ private:
 	ShadowMap* _pShadowMap;
 	SSAO* _pSSAO;
 
+	Terrain _terrain;
+
 	vector<GameObject *> _gameObjects;
 
 	Camera * _camera;
@@ -110,7 +113,8 @@ private:
 	float _cameraOrbitRadiusMin = 2.0f;
 	float _cameraOrbitRadiusMax = 50.0f;
 	float _cameraOrbitAngleXZ = -90.0f;
-	float _cameraSpeed = 2.0f;
+	float _cameraSpeed = 10.0f;
+	float _cameraRotaion = 2.0f;
 
 	UINT _WindowHeight;
 	UINT _WindowWidth;
@@ -160,7 +164,7 @@ public:
 
 	HRESULT Initialise(HINSTANCE hInstance, int nCmdShow);
 
-	bool HandleKeyboard(MSG msg);
+	bool HandleKeyboard(MSG msg, float deltaTime);
 
 	void Update(float deltaTime);
 	void Draw();
