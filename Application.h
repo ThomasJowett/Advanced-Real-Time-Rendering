@@ -70,9 +70,15 @@ private:
 	ID3D11PixelShader*      _pTesselationPixelShader;
 	ID3D11PixelShader*      _pDisplacmentPixelShader;
 
+	ID3D11VertexShader*     _pTerrainVertexShader = nullptr;
+	ID3D11HullShader*		_pTerrainHullShader = nullptr;
+	ID3D11DomainShader*		_pTerrainDomainShader = nullptr;
+	ID3D11PixelShader*      _pTerrainPixelShader = nullptr;
+
 	ID3D11InputLayout*      _pVertexLayout;
 	ID3D11InputLayout*      _pPostProcessLayout;
 	ID3D11InputLayout*		_pSSOALayout;
+	ID3D11InputLayout*		_pTerrainLayout;
 
 	Mesh*					_fullscreenQuad;
 

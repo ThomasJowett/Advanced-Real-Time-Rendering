@@ -30,6 +30,7 @@
     <ClInclude Include="Lights.h" />
     <ClInclude Include="SSAO.h" />
     <ClInclude Include="Terrain.h" />
+    <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
@@ -44,6 +45,7 @@
     <ClCompile Include="ShadowMapping.cpp" />
     <ClCompile Include="SSAO.cpp" />
     <ClCompile Include="Terrain.cpp" />
+    <ClCompile Include="Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">

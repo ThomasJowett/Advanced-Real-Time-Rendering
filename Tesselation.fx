@@ -162,7 +162,7 @@ HS_IO TesselationVS(VS_INPUT input)
 }
 
 [domain("tri")]
-[partitioning("fractional_even")]
+[partitioning("fractional_odd")]
 [outputtopology("triangle_cw")]
 [outputcontrolpoints(3)]
 [patchconstantfunc("PatchHS")]

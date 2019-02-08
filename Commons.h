@@ -84,6 +84,30 @@ __declspec(align(16)) struct ConstantBuffer
 	int MinSamples;
 };
 
+__declspec(align(16)) struct TerrainConstantBuffer
+{
+	XMFLOAT3 EyePosW;
+
+	float MinDist;
+	float MaxDist;
+
+	float MinTess;
+	float MaxTess;
+
+	float TexelCellSpaceU;
+	float TexelCellSpaceV;
+	float WorldCellSpace;
+	XMFLOAT2 TexScale;
+
+	XMFLOAT4 WorldFrustumPlanes[6];
+
+	XMMATRIX View;
+	XMMATRIX Projection;
+
+	SurfaceInfo surface;
+	Light light;
+};
+
 __declspec(align(16)) struct TesselationConstantBuffer
 {
 	float MaxTessDistance;
@@ -143,6 +167,15 @@ namespace Debug
 {
 #define DBG_OUTPUT(...) Debug::Output(__FILE__, __LINE__, __VA_ARGS__)
 #define OUTPUT(...) Debug::Output(__VA_ARGS__)
+#define HR(x)																\
+	{																		\
+		HRESULT hr = (x);													\
+		if (FAILED(hr))														\
+		{																	\
+			Debug::Output(__FILE__, (DWORD)__LINE__, L"HRESULT ERROR\n");	\
+		}																	\
+	}
+
 
 	static void Output(WCHAR* pFormat, ...)
 	{

@@ -305,8 +305,8 @@ HRESULT Application::InitShadersAndInputLayout()
 	ID3DBlob* pPSBlob = nullptr;
 
     // Compile the normal map vertex shader
-    hr = CompileShaderFromFile(L"DX11 Framework.fx", "NormalVS", "vs_5_0", &pVSBlob);
-	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pNormalVertexShader);
+    HR(CompileShaderFromFile(L"DX11 Framework.fx", "NormalVS", "vs_5_0", &pVSBlob));
+	HR(_pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pNormalVertexShader));
 
 	// Compile the normal map pixel shader
     hr = CompileShaderFromFile(L"DX11 Framework.fx", "NormalPS", "ps_5_0", &pPSBlob);
@@ -395,10 +395,10 @@ HRESULT Application::InitShadersAndInputLayout()
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
-	numElements = ARRAYSIZE(layout);
+	numElements = ARRAYSIZE(layoutPostProcess);
 
 	// Create the input layout
-	hr = _pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
+	hr = _pd3dDevice->CreateInputLayout(layoutPostProcess, numElements, pVSBlob->GetBufferPointer(),
 		pVSBlob->GetBufferSize(), &_pPostProcessLayout);
 
 	if (FAILED(hr))
@@ -431,8 +431,10 @@ HRESULT Application::InitShadersAndInputLayout()
 		//{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
+	numElements = ARRAYSIZE(layoutSSOA);
+
 	// Create the input layout
-	hr = _pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
+	hr = _pd3dDevice->CreateInputLayout(layoutSSOA, numElements, pVSBlob->GetBufferPointer(),
 		pVSBlob->GetBufferSize(), &_pSSOALayout);
 
 	
@@ -444,6 +446,30 @@ HRESULT Application::InitShadersAndInputLayout()
 	//Compile the SSAO pixel shader
 	hr = CompileShaderFromFile(L"SSAO.fx", "SSAOPS", "ps_5_0", &pPSBlob);
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pSSAOPixelShader);
+
+	//Terrain Shaders
+	hr = CompileShaderFromFile(L"Terrain.fx", "TerrainVS", "vs_5_0", &pVSBlob);
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pTerrainVertexShader);
+
+	hr = CompileShaderFromFile(L"Terrain.fx", "TerrainPS", "ps_5_0", &pPSBlob);
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pTerrainPixelShader);
+
+	hr = CompileShaderFromFile(L"Terrain.fx", "MainHS", "hs_5_0", &pHSBlob);
+	hr = _pd3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &_pTerrainHullShader);
+
+	hr = CompileShaderFromFile(L"Terrain.fx", "DS", "ds_5_0", &pDSBlob);
+	hr = _pd3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &_pTerrainDomainShader);
+
+	D3D11_INPUT_ELEMENT_DESC layoutTerrain[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD0", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD1", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+
+	// Create the input layout
+	hr = _pd3dDevice->CreateInputLayout(layoutTerrain, numElements, pVSBlob->GetBufferPointer(),
+		pVSBlob->GetBufferSize(), &_pTerrainLayout);
 
 	pVSBlob->Release();
 	pPSBlob->Release();

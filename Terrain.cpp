@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "DDSTextureLoader.h"
 #include "DirectXPackedVector.h"
+#include "Utilities.h"
 
 Terrain::Terrain()
 {
@@ -89,12 +90,41 @@ void Terrain::Init(ID3D11Device * device, ID3D11DeviceContext * deviceContext, c
 	CreateDDSTextureFromFile(device, _info.BlendMapFilename.c_str(), nullptr, &_blendMapSRV);
 }
 
-void Terrain::Draw(ID3D11DeviceContext * pImmediateContext)
+void Terrain::Draw(ID3D11DeviceContext * pImmediateContext, Light light, Camera* camera)
 {
 	pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST);
 
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
+
+	TerrainConstantBuffer cb;
+
+	XMFLOAT4* worldPlanes = reinterpret_cast<XMFLOAT4*>(cb.WorldFrustumPlanes);
+
+	cb.EyePosW = camera->GetPosition();
+	cb.light = light;
+	cb.MaxDist = 500.0f;
+	cb.MinDist = 20.0f;
+	cb.MaxTess = 6.0f;
+	cb.MinTess = 0.0f;
+	cb.TexelCellSpaceU = 1.0f / _info.HeightMapWidth;
+	cb.TexelCellSpaceV = 1.0f / _info.HeightMapHeight;
+	cb.WorldCellSpace = _info.CellSpacing;
+
+	Util::ExtractFrustumPlanes(worldPlanes, camera->GetViewProjection());
+
+	XMMATRIX view = XMLoadFloat4x4(&camera->GetView());
+	XMMATRIX projection = XMLoadFloat4x4(&camera->GetProjection());
+
+	cb.Projection = XMMatrixTranspose(view);
+	cb.View = XMMatrixTranspose(projection);
+
+	cb.surface.AmbientMtrl = _material.ambient;
+	cb.surface.DiffuseMtrl = _material.diffuse;
+	cb.surface.SpecularMtrl = _material.specular;
+
+	cb.TexScale = { 50.0f, 50.0f };
+
 
 	pImmediateContext->IASetVertexBuffers(0, 1, &_quadPatchVertexBuffer, &stride, &offset);
 	pImmediateContext->IASetIndexBuffer(_quadPatchIndexBuffer, DXGI_FORMAT_R16_UINT, 0);

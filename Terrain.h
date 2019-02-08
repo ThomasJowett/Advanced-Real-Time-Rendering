@@ -2,6 +2,7 @@
 #include <vector>
 #include "Commons.h"
 #include "GameObject.h"
+#include "Camera.h"
 
 class Terrain
 {
@@ -33,7 +34,7 @@ public:
 
 	void Init(ID3D11Device* device, ID3D11DeviceContext* deviceContext, const InitInfo& initInfo);
 
-	void Draw(ID3D11DeviceContext* deviceContext);
+	void Draw(ID3D11DeviceContext* deviceContext, Light light, Camera* camera);
 private:
 
 	void LoadHeightMap();
