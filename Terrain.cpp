@@ -108,7 +108,7 @@ void Terrain::Draw(ID3D11DeviceContext * pImmediateContext, Light light, Camera*
 
 	pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST);
 
-	UINT stride = sizeof(SimpleVertex);
+	UINT stride = sizeof(TerrainVertex);
 	UINT offset = 0;
 
 	TerrainConstantBuffer cb;
@@ -130,6 +130,7 @@ void Terrain::Draw(ID3D11DeviceContext * pImmediateContext, Light light, Camera*
 	XMMATRIX view = XMLoadFloat4x4(&camera->GetView());
 	XMMATRIX projection = XMLoadFloat4x4(&camera->GetProjection());
 
+	cb.World = XMMATRIX.identity();
 	cb.Projection = view;
 	cb.View = XMMatrixTranspose(projection);
 

@@ -463,7 +463,7 @@ HRESULT Application::InitShadersAndInputLayout()
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD1", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
 	// Create the input layout
@@ -1165,7 +1165,7 @@ void Application::Draw()
 	_pImmediateContext->VSSetSamplers(0, 1, &_pSamplerLinear);
 	_pImmediateContext->DSSetSamplers(0, 1, &_pSamplerLinear);
 
-	//_terrain.Draw(_pImmediateContext, basicLight, _camera);
+	_terrain.Draw(_pImmediateContext, basicLight, _camera);
 
 	_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	_pImmediateContext->IASetInputLayout(_pVertexLayout);

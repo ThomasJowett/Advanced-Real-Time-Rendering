@@ -48,6 +48,7 @@ cbuffer ConstantBuffer : register (b0)
 
 	float4 WorldFrustumPlanes[6];
 
+	matrix World;
     matrix View;
     matrix Projection;
 
@@ -59,7 +60,7 @@ struct VS_INPUT
 {
     float3 PosL : POSITION;
     float2 Tex : TEXCOORD;
-    float2 BoundsY : TEXCOORD1;
+    float2 BoundsY : TEXCOORD;
 };
 
 struct VS_OUTPUT
@@ -231,6 +232,8 @@ DS_OUTPUT DS(HS_CONSTANT_DATA_OUTPUT patchTess, float2 uv : SV_DomainLocation, c
 	
 	// Displacement mapping
     output.PosW.y = txHeightMap.SampleLevel(samLinear, output.Tex, 0).r;
+
+	float4x4 viewProjection = View * Projection;
 	
 	// Project to homogeneous clip space.
     output.PosH = mul(float4(output.PosW, 1.0f), View * Projection);

@@ -101,6 +101,7 @@ __declspec(align(16)) struct TerrainConstantBuffer
 
 	XMFLOAT4 WorldFrustumPlanes[6];
 
+	XMMATRIX World;
 	XMMATRIX View;
 	XMMATRIX Projection;
 
