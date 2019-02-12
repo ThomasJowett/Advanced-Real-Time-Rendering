@@ -88,10 +88,24 @@ void Terrain::Init(ID3D11Device * device, ID3D11DeviceContext * deviceContext, c
 	CreateDDSTextureFromFile(device, _info.LayerMapFilename4.c_str(), nullptr, &_layer4SRV);
 
 	CreateDDSTextureFromFile(device, _info.BlendMapFilename.c_str(), nullptr, &_blendMapSRV);
+
+	// Create the constant buffer
+	D3D11_BUFFER_DESC bd;
+	ZeroMemory(&bd, sizeof(bd));
+	bd.Usage = D3D11_USAGE_DEFAULT;
+	bd.ByteWidth = sizeof(TerrainConstantBuffer);
+	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bd.CPUAccessFlags = 0;
+	HR(device->CreateBuffer(&bd, nullptr, &_pConstantBuffer));
 }
 
 void Terrain::Draw(ID3D11DeviceContext * pImmediateContext, Light light, Camera* camera)
 {
+	pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	pImmediateContext->HSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	pImmediateContext->DSSetConstantBuffers(0, 1, &_pConstantBuffer);
+
 	pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST);
 
 	UINT stride = sizeof(SimpleVertex);
@@ -116,7 +130,7 @@ void Terrain::Draw(ID3D11DeviceContext * pImmediateContext, Light light, Camera*
 	XMMATRIX view = XMLoadFloat4x4(&camera->GetView());
 	XMMATRIX projection = XMLoadFloat4x4(&camera->GetProjection());
 
-	cb.Projection = XMMatrixTranspose(view);
+	cb.Projection = view;
 	cb.View = XMMatrixTranspose(projection);
 
 	cb.surface.AmbientMtrl = _material.ambient;
@@ -125,10 +139,23 @@ void Terrain::Draw(ID3D11DeviceContext * pImmediateContext, Light light, Camera*
 
 	cb.TexScale = { 50.0f, 50.0f };
 
+	pImmediateContext->PSSetShaderResources(0, 1, &_blendMapSRV);
+	pImmediateContext->PSSetShaderResources(1, 1, &_heightMapSRV);
+	pImmediateContext->VSSetShaderResources(1, 1, &_heightMapSRV);
+	pImmediateContext->DSSetShaderResources(1, 1, &_heightMapSRV);
+
+	pImmediateContext->PSSetShaderResources(2, 1, &_layer0SRV);
+	pImmediateContext->PSSetShaderResources(3, 1, &_layer1SRV);
+	pImmediateContext->PSSetShaderResources(4, 1, &_layer2SRV);
+	pImmediateContext->PSSetShaderResources(5, 1, &_layer3SRV);
+	pImmediateContext->PSSetShaderResources(6, 1, &_layer4SRV);
+
+	pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
 
 	pImmediateContext->IASetVertexBuffers(0, 1, &_quadPatchVertexBuffer, &stride, &offset);
 	pImmediateContext->IASetIndexBuffer(_quadPatchIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 
+	pImmediateContext->DrawIndexed(_numPatchQuadFaces * 4, 0, 0);
 }
 
 void Terrain::LoadHeightMap()

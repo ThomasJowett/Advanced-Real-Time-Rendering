@@ -58,7 +58,7 @@ cbuffer ConstantBuffer : register (b0)
 struct VS_INPUT
 {
     float3 PosL : POSITION;
-    float2 Tex : TEXCOORD0;
+    float2 Tex : TEXCOORD;
     float2 BoundsY : TEXCOORD1;
 };
 
@@ -75,7 +75,7 @@ VS_OUTPUT TerrainVS(VS_INPUT input)
 
 	output.PosW = input.PosL;
 
-    output.PosW.y = txHeightMap.SampleLevel(samHeightMap, input.Tex, 0).r;
+    output.PosW.y = txHeightMap.SampleLevel(samLinear, input.Tex, 0).r;
 
 	output.Tex = input.Tex;
 	output.BoundsY = input.BoundsY;
@@ -230,7 +230,7 @@ DS_OUTPUT DS(HS_CONSTANT_DATA_OUTPUT patchTess, float2 uv : SV_DomainLocation, c
     output.TiledTex = output.Tex * TexScale;
 	
 	// Displacement mapping
-    output.PosW.y = txHeightMap.SampleLevel(samHeightMap, output.Tex, 0).r;
+    output.PosW.y = txHeightMap.SampleLevel(samLinear, output.Tex, 0).r;
 	
 	// Project to homogeneous clip space.
     output.PosH = mul(float4(output.PosW, 1.0f), View * Projection);
@@ -245,10 +245,10 @@ float4 TerrainPS(DS_OUTPUT input) :SV_Target
     float2 bottomTex = input.Tex + float2(0.0f, TexelCellSpaceV);
     float2 topTex = input.Tex + float2(0.0f, -TexelCellSpaceV);
 
-    float leftY = txHeightMap.SampleLevel(samHeightMap, leftTex, 0).r;
-    float rightY = txHeightMap.SampleLevel(samHeightMap, rightTex, 0).r;
-    float bottomY = txHeightMap.SampleLevel(samHeightMap, bottomTex, 0).r;
-    float topY = txHeightMap.SampleLevel(samHeightMap, topTex, 0).r;
+    float leftY = txHeightMap.SampleLevel(samLinear, leftTex, 0).r;
+    float rightY = txHeightMap.SampleLevel(samLinear, rightTex, 0).r;
+    float bottomY = txHeightMap.SampleLevel(samLinear, bottomTex, 0).r;
+    float topY = txHeightMap.SampleLevel(samLinear, topTex, 0).r;
 
     float3 tangent = normalize(float3(2.0f * WorldCellSpace, rightY - leftY, 0.0f));
     float3 bitangent = normalize(float3(0.0f, bottomY -topY, 2.0f * WorldCellSpace));

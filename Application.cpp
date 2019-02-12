@@ -52,6 +52,7 @@ Application::Application()
 	_pNormalVertexShader = nullptr;
 	_pNormalPixelShader = nullptr;
 	_pVertexLayout = nullptr;
+	_pTerrainLayout = nullptr;
 	_pConstantBuffer = nullptr;
 	_pTessConstantBuffer = nullptr;
 
@@ -424,6 +425,14 @@ HRESULT Application::InitShadersAndInputLayout()
 	hr = CompileShaderFromFile(L"Tesselation.fx", "DisplacementPS", "ps_5_0", &pPSBlob);
 	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pDisplacmentPixelShader);
 
+	//Compile the SSAO vertex shader
+	hr = CompileShaderFromFile(L"SSAO.fx", "SSAOVS", "vs_5_0", &pVSBlob);
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pSSAOVertexShader);
+
+	//Compile the SSAO pixel shader
+	hr = CompileShaderFromFile(L"SSAO.fx", "SSAOPS", "ps_5_0", &pPSBlob);
+	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pSSAOPixelShader);
+
 	D3D11_INPUT_ELEMENT_DESC layoutSSOA[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -436,16 +445,6 @@ HRESULT Application::InitShadersAndInputLayout()
 	// Create the input layout
 	hr = _pd3dDevice->CreateInputLayout(layoutSSOA, numElements, pVSBlob->GetBufferPointer(),
 		pVSBlob->GetBufferSize(), &_pSSOALayout);
-
-	
-
-	//Compile the SSAO vertex shader
-	hr = CompileShaderFromFile(L"SSAO.fx", "SSAOVS", "vs_5_0", &pVSBlob);
-	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pSSAOVertexShader);
-
-	//Compile the SSAO pixel shader
-	hr = CompileShaderFromFile(L"SSAO.fx", "SSAOPS", "ps_5_0", &pPSBlob);
-	hr = _pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &_pSSAOPixelShader);
 
 	//Terrain Shaders
 	hr = CompileShaderFromFile(L"Terrain.fx", "TerrainVS", "vs_5_0", &pVSBlob);
@@ -463,7 +462,7 @@ HRESULT Application::InitShadersAndInputLayout()
 	D3D11_INPUT_ELEMENT_DESC layoutTerrain[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD0", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD1", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
@@ -791,6 +790,7 @@ void Application::Cleanup()
 
     if (_pVertexLayout) _pVertexLayout->Release();
 	if (_pPostProcessLayout) _pPostProcessLayout->Release();
+	if (_pTerrainLayout) _pTerrainLayout->Release();
 
     if (_pNormalVertexShader) _pNormalVertexShader->Release();
     if (_pNormalPixelShader) _pNormalPixelShader->Release();
@@ -1152,6 +1152,22 @@ void Application::Draw()
     //
 	_pImmediateContext->RSSetState(ViewMode());
 
+	//Render the terrain
+
+	_pImmediateContext->IASetInputLayout(_pTerrainLayout);
+
+	_pImmediateContext->VSSetShader(_pTerrainVertexShader, nullptr, 0);
+	_pImmediateContext->PSSetShader(_pTerrainPixelShader, nullptr, 0);
+	_pImmediateContext->HSSetShader(_pTerrainHullShader, nullptr, 0);
+	_pImmediateContext->DSSetShader(_pTerrainDomainShader, nullptr, 0);
+
+	_pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
+	_pImmediateContext->VSSetSamplers(0, 1, &_pSamplerLinear);
+	_pImmediateContext->DSSetSamplers(0, 1, &_pSamplerLinear);
+
+	//_terrain.Draw(_pImmediateContext, basicLight, _camera);
+
+	_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	_pImmediateContext->IASetInputLayout(_pVertexLayout);
 
 	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);

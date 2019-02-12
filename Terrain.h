@@ -53,9 +53,7 @@ private:
 	ID3D11Buffer* _quadPatchVertexBuffer;
 	ID3D11Buffer* _quadPatchIndexBuffer;
 
-	ID3D11ShaderResourceView* _layerMapArraySRV;
-	ID3D11ShaderResourceView* _blendMapSRV;
-	ID3D11ShaderResourceView* _heightMapSRV;
+	ID3D11Buffer*        _pConstantBuffer;
 
 	InitInfo _info;
 
@@ -71,6 +69,9 @@ private:
 
 	std::vector<XMFLOAT2> _patchBoundsY;
 	std::vector<float> _heightMap;
+
+	ID3D11ShaderResourceView* _blendMapSRV;
+	ID3D11ShaderResourceView* _heightMapSRV;
 
 	ID3D11ShaderResourceView * _layer0SRV;
 	ID3D11ShaderResourceView * _layer1SRV;

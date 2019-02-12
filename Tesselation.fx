@@ -59,7 +59,7 @@ struct PS_INPUT
     float4 PosW : POSITION;
     float3 NormW : NORMAL;
     float3 TangentW : TANGENT;
-    float2 Tex : TEXCOORD0;
+    float2 Tex : TEXCOORD;
 };
 
 struct PS_DISPLACEMENT_INPUT
