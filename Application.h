@@ -121,6 +121,7 @@ private:
 	float _cameraOrbitAngleXZ = -90.0f;
 	float _cameraSpeed = 10.0f;
 	float _cameraRotaion = 2.0f;
+	bool _walkCamera = true;
 
 	UINT _WindowHeight;
 	UINT _WindowWidth;
@@ -171,6 +172,7 @@ public:
 	HRESULT Initialise(HINSTANCE hInstance, int nCmdShow);
 
 	bool HandleKeyboard(MSG msg, float deltaTime);
+	bool HandleMouse(MSG msg, float deltaTime);
 
 	void Update(float deltaTime);
 	void Draw();

@@ -63,7 +63,10 @@ IndexedModel OBJLoader::Load(const char * filename, bool invertCoordinates)
 
 					//diferent modeling software stores the texture coordinates differently
 
-					if (invertCoordinates) TexCoord.y = 1.0f - TexCoord.y;
+					if (invertCoordinates)
+					{
+						TexCoord.y = 1.0f - TexCoord.y;
+					}
 
 					TexCoords.push_back(TexCoord);
 				}

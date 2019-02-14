@@ -35,6 +35,31 @@ bool Application::HandleKeyboard(MSG msg, float deltaTime)
 
 	}
 
+	
+
+	return false;
+}
+
+bool Application::HandleMouse(MSG msg, float deltaTime)
+{
+	switch (msg.wParam)
+	{
+		
+	}
+
+	float delta = GET_WHEEL_DELTA_WPARAM(msg.wParam);
+
+	if (delta > 0)
+	{
+		_cameraSpeed++;
+	}
+	else if (delta < 0)
+	{
+		_cameraSpeed--;
+		if (_cameraSpeed < 1.0f)
+			_cameraSpeed = 1.0f;
+	}
+
 	return false;
 }
 
@@ -154,7 +179,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	XMFLOAT3 at = XMFLOAT3(0.0f, 2.0f, 0.0f);
 	XMFLOAT3 up = XMFLOAT3(0.0f, 1.0f, 0.0f);
 
-	_camera = new Camera(eye, at, up, (float)_renderWidth, (float)_renderHeight, 0.01f, 200.0f);
+	_camera = new Camera(eye, at, up, (float)_renderWidth, (float)_renderHeight, 0.01f, 2000.0f);
 
 	// Setup the scene's light
 	basicLight.AmbientLight = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
@@ -178,16 +203,16 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	Mesh GunGeometry(OBJLoader::Load("Resources\\Gun.obj", true), _pd3dDevice);
 
 	Terrain::InitInfo tii;
-	tii.HeightMapFilename = L"Resources\\terrain.raw";
+	tii.HeightMapFilename = L"Resources\\coneHeight.raw";
 	tii.LayerMapFilename0 = L"Resources\\grass.dds";
-	tii.LayerMapFilename1 = L"Resources\\darkdirt.dss";
-	tii.LayerMapFilename2 = L"Resources\\stone.dss";
+	tii.LayerMapFilename1 = L"Resources\\darkdirt.dds";
+	tii.LayerMapFilename2 = L"Resources\\stone.dds";
 	tii.LayerMapFilename3 = L"Resources\\lightdirt.dds";
 	tii.LayerMapFilename4 = L"Resources\\snow.dds";
-	tii.BlendMapFilename = L"Resources\\blend.dss";
+	tii.BlendMapFilename = L"Resources\\blend.dds";
 	tii.HeightScale = 50.0f;
-	tii.HeightMapWidth = 2049;
-	tii.HeightMapHeight = 2049;
+	tii.HeightMapWidth = 600;
+	tii.HeightMapHeight = 600;
 	tii.CellSpacing = 0.5f;
 
 	_terrain.Init(_pd3dDevice, _pImmediateContext, tii);
@@ -226,9 +251,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	//gameObject->SetShaderToUse(FX_DISPLACEMENT);
 	//gameObject->SetShaderToUse(FX_WIREFRAME);
 	
-	_gameObjects.push_back(gameObject);
+	//_gameObjects.push_back(gameObject);
 
-	transform = new Transform(Vector3D(0.0f, 1.0f, 0.0f), Vector3D(XM_PIDIV2, 0, 0), Vector3D(1.0f, 1.0f, 1.0f));
+	transform = new Transform(Vector3D(0.0f, _terrain.GetHeight(0.0f, 0.0f) + 1.0f, 0.0f), Vector3D(XM_PIDIV2, 0, 0), Vector3D(1.0f, 1.0f, 1.0f));
 	
 	gameObject = new GameObject("Crate", transform, cubeGeometry, shinyMaterial);
 	gameObject->SetTextureRV(_pDiffuseCrateTextureRV, TX_DIFFUSE);
@@ -239,7 +264,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	
 	_gameObjects.push_back(gameObject);
 	
-	transform = new Transform(Vector3D(5.0f, 0.6f, 0.0f), Vector3D(0, XM_PI, 0), Vector3D(0.01f, 0.01f, 0.01f));
+	transform = new Transform(Vector3D(5.0f, _terrain.GetHeight(0.0f, 0.0f) + 1.0f, 0.0f), Vector3D(0, XM_PI, 0), Vector3D(0.02f, 0.02f, 0.02f));
 	
 	gameObject = new GameObject("SpaceMan", transform, SpaceManGeometry, shinyMaterial);
 	gameObject->SetTextureRV(_pDiffuseSpaceManTextureRV, TX_DIFFUSE);
@@ -247,7 +272,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	
 	_gameObjects.push_back(gameObject);
 	
-	transform = new Transform(Vector3D(-5.0f, 0.0f, 0.0f), Vector3D(0, 0, 0), Vector3D(0.01f, 0.01f, 0.01f));
+	transform = new Transform(Vector3D(-5.0f, _terrain.GetHeight(0.0f, 0.0f) + 0.6f, 0.0f), Vector3D(0, 0, 0), Vector3D(0.01f, 0.01f, 0.01f));
 	
 	gameObject = new GameObject("Gun", transform, GunGeometry, metal); 
 	gameObject->SetTextureRV(_pDiffuseGunTextureRV, TX_DIFFUSE);
@@ -260,7 +285,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	for (auto i = 0; i < 5; i++)
 	{
-		position = Vector3D(-4.0f + (i * 2.0f), 0.5f, 10.0f);
+		position = Vector3D(-4.0f + (i * 2.0f), 0.0f, 10.0f);
+		position.y = _terrain.GetHeight(position.x, position.y) + 1.0f;
 		transform = new Transform(position, Vector3D(0.0f, 0.0f, 0.0f), Vector3D(1.0f, 1.0f, 1.0f));
 		if (i == 1)
 		{
@@ -1025,6 +1051,11 @@ void Application::Update(float deltaTime)
 		SetShader(FX_WIREFRAME);
 	}
 
+	if (GetAsyncKeyState('C') & 0x8000)
+	{
+		_walkCamera = !_walkCamera;
+	}
+
 	if (GetAsyncKeyState(VK_F4) & 0x8000)//F1
 	{
 		textureToShow = 0;
@@ -1082,7 +1113,11 @@ void Application::Update(float deltaTime)
 	//cameraPos.z = z;
 
 	//_camera->SetPosition(cameraPos);
+
+	if(_walkCamera)
+		_camera->SetPosition(Vector3D(_camera->GetPosition().x, _terrain.GetHeight(_camera->GetPosition().x, _camera->GetPosition().z) + 2.0f, _camera->GetPosition().z));
 	_camera->Update();
+
 
 	// Update objects
 	for (auto gameObject : _gameObjects)

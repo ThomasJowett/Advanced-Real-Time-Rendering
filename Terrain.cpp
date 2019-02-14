@@ -25,6 +25,8 @@ float Terrain::GetDepth() const
 
 float Terrain::GetHeight(float x, float z) const
 {
+	if (x < -0.5f * GetWidth() || z < -0.5f * GetDepth() || x > 0.5f * GetWidth() || z > 0.5f * GetDepth())
+		return 0.0f;
 	float c = (x + 0.5f*GetWidth()) / _info.CellSpacing;
 	float d = (z - 0.5f*GetDepth()) / -_info.CellSpacing;
 
@@ -89,6 +91,11 @@ void Terrain::Init(ID3D11Device * device, ID3D11DeviceContext * deviceContext, c
 
 	CreateDDSTextureFromFile(device, _info.BlendMapFilename.c_str(), nullptr, &_blendMapSRV);
 
+	_material.ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
+	_material.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	_material.specular = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
+	_material.specularPower = 1.0f;
+
 	// Create the constant buffer
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
@@ -127,12 +134,21 @@ void Terrain::Draw(ID3D11DeviceContext * pImmediateContext, Light light, Camera*
 
 	Util::ExtractFrustumPlanes(worldPlanes, camera->GetViewProjection());
 
+
+
 	XMMATRIX view = XMLoadFloat4x4(&camera->GetView());
 	XMMATRIX projection = XMLoadFloat4x4(&camera->GetProjection());
 
-	cb.World = XMMATRIX.identity();
-	cb.Projection = view;
-	cb.View = XMMatrixTranspose(projection);
+	XMFLOAT4X4 viewProjection;
+	XMMATRIX transposeViewProj = XMMatrixTranspose(XMLoadFloat4x4(&camera->GetViewProjection()));
+
+	XMStoreFloat4x4(&viewProjection, transposeViewProj);
+
+	//Util::ExtractFrustumPlanes(worldPlanes, viewProjection);
+
+	cb.World = XMMATRIX();
+	cb.View = XMMatrixTranspose(view);
+	cb.Projection = XMMatrixTranspose(projection);
 
 	cb.surface.AmbientMtrl = _material.ambient;
 	cb.surface.DiffuseMtrl = _material.diffuse;

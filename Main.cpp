@@ -37,6 +37,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			else if (WM_QUIT == msg.message)
 				break;
 
+			handled = theApp->HandleMouse(msg, deltaTime);
+
 			if (!handled)
 			{
 				TranslateMessage(&msg);

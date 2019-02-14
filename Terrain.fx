@@ -139,7 +139,7 @@ HS_CONSTANT_DATA_OUTPUT PatchHS(InputPatch<VS_OUTPUT, 4> ip, uint patchID : SV_P
     float3 vMax = float3(ip[1].PosW.x, maxY, ip[1].PosW.z);
 	
     float3 boxCenter = 0.5f * (vMin + vMax);
-    float3 boxExtents = 0.5f * (vMax - vMin);
+    float3 boxExtents = 10.0f * (vMax - vMin);
     if (AABBOutsideFrustumTest(boxCenter, boxExtents, WorldFrustumPlanes))
     {
         output.Edges[0] = 0.0f;
@@ -232,11 +232,11 @@ DS_OUTPUT DS(HS_CONSTANT_DATA_OUTPUT patchTess, float2 uv : SV_DomainLocation, c
 	
 	// Displacement mapping
     output.PosW.y = txHeightMap.SampleLevel(samLinear, output.Tex, 0).r;
-
-	float4x4 viewProjection = View * Projection;
 	
 	// Project to homogeneous clip space.
-    output.PosH = mul(float4(output.PosW, 1.0f), View * Projection);
+    output.PosH = float4(output.PosW, 1.0f);
+    output.PosH = mul(output.PosH, View);
+    output.PosH = mul(output.PosH, Projection);
 	
     return output;
 }
@@ -255,7 +255,7 @@ float4 TerrainPS(DS_OUTPUT input) :SV_Target
 
     float3 tangent = normalize(float3(2.0f * WorldCellSpace, rightY - leftY, 0.0f));
     float3 bitangent = normalize(float3(0.0f, bottomY -topY, 2.0f * WorldCellSpace));
-    float3 normalW = cross(tangent, bitangent);
+    float3 normalW = cross(bitangent, tangent);
 
     float3 toEye = EyePosW - input.PosW;
 
@@ -268,11 +268,11 @@ float4 TerrainPS(DS_OUTPUT input) :SV_Target
     //
 
     //Sample Layers textures
-    float c0 = txLayer0.Sample(samLinear, input.TiledTex);
-    float c1 = txLayer1.Sample(samLinear, input.TiledTex);
-    float c2 = txLayer2.Sample(samLinear, input.TiledTex);
-    float c3 = txLayer3.Sample(samLinear, input.TiledTex);
-    float c4 = txLayer4.Sample(samLinear, input.TiledTex);
+    float4 c0 = txLayer0.Sample(samLinear, input.TiledTex);
+    float4 c1 = txLayer1.Sample(samLinear, input.TiledTex);
+    float4 c2 = txLayer2.Sample(samLinear, input.TiledTex);
+    float4 c3 = txLayer3.Sample(samLinear, input.TiledTex);
+    float4 c4 = txLayer4.Sample(samLinear, input.TiledTex);
 
     //sample the blend map
     float4 t = txBlendMap.Sample(samLinear, input.Tex);
