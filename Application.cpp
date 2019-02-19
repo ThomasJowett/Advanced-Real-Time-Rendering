@@ -203,7 +203,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	Mesh GunGeometry(OBJLoader::Load("Resources\\Gun.obj", true), _pd3dDevice);
 
 	Terrain::InitInfo tii;
-	tii.HeightMapFilename = L"Resources\\coneHeight.raw";
+	tii.HeightMapFilename = L"Resources\\terrain.raw";
 	tii.LayerMapFilename0 = L"Resources\\grass.dds";
 	tii.LayerMapFilename1 = L"Resources\\darkdirt.dds";
 	tii.LayerMapFilename2 = L"Resources\\stone.dds";
@@ -211,8 +211,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	tii.LayerMapFilename4 = L"Resources\\snow.dds";
 	tii.BlendMapFilename = L"Resources\\blend.dds";
 	tii.HeightScale = 50.0f;
-	tii.HeightMapWidth = 600;
-	tii.HeightMapHeight = 600;
+	tii.HeightMapWidth = 2046;
+	tii.HeightMapHeight = 2046;
 	tii.CellSpacing = 0.5f;
 
 	_terrain.Init(_pd3dDevice, _pImmediateContext, tii);
