@@ -363,6 +363,10 @@ HRESULT Application::InitShadersAndInputLayout()
 	hr = CompileShaderFromFile(L"ShadowMap.fx", "ShadowMapVS", "vs_5_0", &pVSBlob);
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pShadowMapVertexShader);
 
+	//Compile the Shadow map vertex shader
+	hr = CompileShaderFromFile(L"ShadowMap.fx", "ShadowMapTerrainVS", "vs_5_0", &pVSBlob);
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pTerrainShadowVertexShader);
+
 	//Compile the SSAO Normal Depth vertex shader
 	hr = CompileShaderFromFile(L"SSAONormalDepth.fx", "SSAONormalDepthVS", "vs_5_0", &pVSBlob);
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pSSAONormalDepthVertexShader);
@@ -434,10 +438,16 @@ HRESULT Application::InitShadersAndInputLayout()
 	ID3DBlob * pHSBlob = nullptr;
 	hr = CompileShaderFromFile(L"Tesselation.fx", "MainHS", "hs_5_0", &pHSBlob);
 	hr = _pd3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &_pHullShader);
+
+	hr = CompileShaderFromFile(L"ShadowMap.fx", "TerrainHS", "hs_5_0", &pHSBlob);
+	hr = _pd3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &_pTerrainShadowHullShader);
 	
 	ID3DBlob * pDSBlob = nullptr;
 	hr = CompileShaderFromFile(L"Tesselation.fx", "DSMAIN", "ds_5_0", &pDSBlob);
 	hr = _pd3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &_pDomainShader);
+
+	hr = CompileShaderFromFile(L"ShadowMap.fx", "TerrainDS", "ds_5_0", &pDSBlob);
+	hr = _pd3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &_pTerrainShadowDomainShader);
 
 	hr = CompileShaderFromFile(L"Tesselation.fx", "DisplacementDS", "ds_5_0", &pDSBlob);
 	hr = _pd3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &_pDisplacementDomainShader);

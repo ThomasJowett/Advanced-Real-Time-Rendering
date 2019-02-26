@@ -75,6 +75,10 @@ private:
 	ID3D11DomainShader*		_pTerrainDomainShader = nullptr;
 	ID3D11PixelShader*      _pTerrainPixelShader = nullptr;
 
+	ID3D11VertexShader*     _pTerrainShadowVertexShader = nullptr;
+	ID3D11HullShader*		_pTerrainShadowHullShader = nullptr;
+	ID3D11DomainShader*		_pTerrainShadowDomainShader = nullptr;
+
 	ID3D11InputLayout*      _pVertexLayout;
 	ID3D11InputLayout*      _pPostProcessLayout;
 	ID3D11InputLayout*		_pSSOALayout;
