@@ -14,6 +14,16 @@ cbuffer ConstantBuffer : register(b0)
 	matrix World;
 	matrix View;
 	matrix Projection;
+
+    float4 WorldFrustumPlanes[6];
+
+    float3 EyePosW;
+
+    float MinDist;
+    float MaxDist;
+
+    float MinTess;
+    float MaxTess;
 }
 
 struct VS_INPUT
@@ -112,7 +122,7 @@ struct HS_CONSTANT_DATA_OUTPUT
 	float Inside[2] : SV_InsideTessFactor;
 };
 
-HS_CONSTANT_DATA_OUTPUT PatchHS(InputPatch<VS_OUTPUT, 4> ip, uint patchID : SV_PrimitiveID)
+HS_CONSTANT_DATA_OUTPUT PatchHS(InputPatch<VS_TERRAIN_OUTPUT, 4> ip, uint patchID : SV_PrimitiveID)
 {
 	HS_CONSTANT_DATA_OUTPUT output;
 
@@ -182,7 +192,7 @@ struct HS_OUTPUT
 [patchconstantfunc("PatchHS")]
 [maxtessfactor(64.0f)]
 
-HS_OUTPUT TerrainHS(InputPatch<VS_OUTPUT, 4>ip, uint i : SV_OutputControlPointID, uint patchID : SV_PrimitiveID)
+HS_OUTPUT TerrainHS(InputPatch<VS_TERRAIN_OUTPUT, 4>ip, uint i : SV_OutputControlPointID, uint patchID : SV_PrimitiveID)
 {
 	HS_OUTPUT output;
 
@@ -195,10 +205,7 @@ HS_OUTPUT TerrainHS(InputPatch<VS_OUTPUT, 4>ip, uint i : SV_OutputControlPointID
 struct DS_OUTPUT
 {
 	float4 PosH : SV_POSITION;
-	float3 PosW : POSITION;
 	float2 Tex : TEXCOORD0;
-	float2 TiledTex : TEXCOORD1;
-	float4 ShadowPosH : TEXCOORD2;
 };
 
 [domain("quad")]
@@ -207,7 +214,7 @@ DS_OUTPUT TerrainDS(HS_CONSTANT_DATA_OUTPUT patchTess, float2 uv : SV_DomainLoca
 	DS_OUTPUT output;
 
 	// Bilinear interpolation.
-	output.PosW = lerp(
+	float3 PosW = lerp(
 		lerp(quad[0].PosW, quad[1].PosW, uv.x),
 		lerp(quad[2].PosW, quad[3].PosW, uv.x),
 		uv.y);
@@ -217,18 +224,13 @@ DS_OUTPUT TerrainDS(HS_CONSTANT_DATA_OUTPUT patchTess, float2 uv : SV_DomainLoca
 		lerp(quad[2].Tex, quad[3].Tex, uv.x),
 		uv.y);
 
-	// Tile layer textures over terrain.
-	output.TiledTex = output.Tex * TexScale;
-
 	// Displacement mapping
-	output.PosW.y = txHeightMap.SampleLevel(samLinear, output.Tex, 0).r;
+	PosW.y = txHeightMap.SampleLevel(samLinear, output.Tex, 0).r;
 
 	// Project to homogeneous clip space.
-	output.PosH = float4(output.PosW, 1.0f);
+	output.PosH = float4(PosW, 1.0f);
 	output.PosH = mul(output.PosH, View);
 	output.PosH = mul(output.PosH, Projection);
-
-	output.ShadowPosH = mul(float4(output.PosW.xyz, 1.0), ShadowTransform);
 
 	return output;
 }

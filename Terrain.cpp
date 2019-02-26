@@ -106,7 +106,7 @@ void Terrain::Init(ID3D11Device * device, ID3D11DeviceContext * deviceContext, c
 	HR(device->CreateBuffer(&bd, nullptr, &_pConstantBuffer));
 }
 
-void Terrain::Draw(ID3D11DeviceContext * pImmediateContext, Light light, Camera* camera)
+void Terrain::Draw(ID3D11DeviceContext * pImmediateContext, Light light, Camera* camera, ShadowMap* pShadowMap)
 {
 	pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
@@ -134,21 +134,15 @@ void Terrain::Draw(ID3D11DeviceContext * pImmediateContext, Light light, Camera*
 
 	Util::ExtractFrustumPlanes(worldPlanes, camera->GetViewProjection());
 
-
-
 	XMMATRIX view = XMLoadFloat4x4(&camera->GetView());
 	XMMATRIX projection = XMLoadFloat4x4(&camera->GetProjection());
-
-	XMFLOAT4X4 viewProjection;
-	XMMATRIX transposeViewProj = XMMatrixTranspose(XMLoadFloat4x4(&camera->GetViewProjection()));
-
-	XMStoreFloat4x4(&viewProjection, transposeViewProj);
-
-	//Util::ExtractFrustumPlanes(worldPlanes, viewProjection);
 
 	cb.World = XMMATRIX();
 	cb.View = XMMatrixTranspose(view);
 	cb.Projection = XMMatrixTranspose(projection);
+
+	XMMATRIX shadowTransform = XMLoadFloat4x4(&pShadowMap->GetTransform());
+	cb.ShadowTransform = XMMatrixTranspose(shadowTransform);
 
 	cb.surface.AmbientMtrl = _material.ambient;
 	cb.surface.DiffuseMtrl = _material.diffuse;
@@ -173,6 +167,37 @@ void Terrain::Draw(ID3D11DeviceContext * pImmediateContext, Light light, Camera*
 	pImmediateContext->IASetIndexBuffer(_quadPatchIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 
 	pImmediateContext->DrawIndexed(_numPatchQuadFaces * 4, 0, 0);
+}
+
+void Terrain::DrawToShadowMap(ID3D11DeviceContext * deviceContext, ShadowMapConstantBuffer &cb, Camera * camera)
+{
+	deviceContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	deviceContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	deviceContext->HSSetConstantBuffers(0, 1, &_pConstantBuffer);
+	deviceContext->DSSetConstantBuffers(0, 1, &_pConstantBuffer);
+
+	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST);
+	UINT stride = sizeof(TerrainVertex);
+	UINT offset = 0;
+
+	XMFLOAT4* worldPlanes = reinterpret_cast<XMFLOAT4*>(cb.WorldFrustumPlanes);
+
+	Util::ExtractFrustumPlanes(worldPlanes, camera->GetViewProjection());
+
+	cb.MaxDist = 500.0f;
+	cb.MinDist = 20.0f;
+	cb.MaxTess = 6.0f;
+	cb.MinTess = 0.0f;
+
+	deviceContext->VSSetShaderResources(0, 1, &_heightMapSRV);
+	deviceContext->DSSetShaderResources(0, 1, &_heightMapSRV);
+
+	deviceContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+	deviceContext->IASetVertexBuffers(0, 1, &_quadPatchVertexBuffer, &stride, &offset);
+	deviceContext->IASetIndexBuffer(_quadPatchIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+
+	deviceContext->DrawIndexed(_numPatchQuadFaces * 4, 0, 0);
 }
 
 void Terrain::LoadHeightMap()

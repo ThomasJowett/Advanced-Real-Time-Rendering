@@ -363,9 +363,7 @@ HRESULT Application::InitShadersAndInputLayout()
 	hr = CompileShaderFromFile(L"ShadowMap.fx", "ShadowMapVS", "vs_5_0", &pVSBlob);
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pShadowMapVertexShader);
 
-	//Compile the Shadow map vertex shader
-	hr = CompileShaderFromFile(L"ShadowMap.fx", "ShadowMapTerrainVS", "vs_5_0", &pVSBlob);
-	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pTerrainShadowVertexShader);
+	
 
 	//Compile the SSAO Normal Depth vertex shader
 	hr = CompileShaderFromFile(L"SSAONormalDepth.fx", "SSAONormalDepthVS", "vs_5_0", &pVSBlob);
@@ -438,16 +436,10 @@ HRESULT Application::InitShadersAndInputLayout()
 	ID3DBlob * pHSBlob = nullptr;
 	hr = CompileShaderFromFile(L"Tesselation.fx", "MainHS", "hs_5_0", &pHSBlob);
 	hr = _pd3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &_pHullShader);
-
-	hr = CompileShaderFromFile(L"ShadowMap.fx", "TerrainHS", "hs_5_0", &pHSBlob);
-	hr = _pd3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &_pTerrainShadowHullShader);
 	
 	ID3DBlob * pDSBlob = nullptr;
 	hr = CompileShaderFromFile(L"Tesselation.fx", "DSMAIN", "ds_5_0", &pDSBlob);
 	hr = _pd3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &_pDomainShader);
-
-	hr = CompileShaderFromFile(L"ShadowMap.fx", "TerrainDS", "ds_5_0", &pDSBlob);
-	hr = _pd3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &_pTerrainShadowDomainShader);
 
 	hr = CompileShaderFromFile(L"Tesselation.fx", "DisplacementDS", "ds_5_0", &pDSBlob);
 	hr = _pd3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &_pDisplacementDomainShader);
@@ -494,6 +486,16 @@ HRESULT Application::InitShadersAndInputLayout()
 
 	hr = CompileShaderFromFile(L"Terrain.fx", "DS", "ds_5_0", &pDSBlob);
 	hr = _pd3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &_pTerrainDomainShader);
+
+	hr = CompileShaderFromFile(L"ShadowMap.fx", "TerrainDS", "ds_5_0", &pDSBlob);
+	hr = _pd3dDevice->CreateDomainShader(pDSBlob->GetBufferPointer(), pDSBlob->GetBufferSize(), nullptr, &_pTerrainShadowDomainShader);
+
+	//Compile the terrain Shadow map vertex shader
+	hr = CompileShaderFromFile(L"ShadowMap.fx", "ShadowMapTerrainVS", "vs_5_0", &pVSBlob);
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pTerrainShadowVertexShader);
+
+	hr = CompileShaderFromFile(L"ShadowMap.fx", "TerrainHS", "hs_5_0", &pHSBlob);
+	hr = _pd3dDevice->CreateHullShader(pHSBlob->GetBufferPointer(), pHSBlob->GetBufferSize(), nullptr, &_pTerrainShadowHullShader);
 
 	D3D11_INPUT_ELEMENT_DESC layoutTerrain[] =
 	{
@@ -923,17 +925,34 @@ void Application::DrawSceneToShadowMap()
 	XMMATRIX view = XMLoadFloat4x4(&_pShadowMap->GetView());
 	XMMATRIX projection = XMLoadFloat4x4(&_pShadowMap->GetProjection());
 
+	ShadowMapConstantBuffer cb;
+
+	cb.View = XMMatrixTranspose(view);
+	cb.Projection = XMMatrixTranspose(projection);
+	cb.EyePosW = _camera->GetPosition();
+
+	//Render Terrain -------------------------------------------------------------------
+
+	_pImmediateContext->IASetInputLayout(_pTerrainLayout);
+
+	_pImmediateContext->VSSetShader(_pTerrainShadowVertexShader, nullptr, 0);
+	_pImmediateContext->PSSetShader(nullptr, nullptr, 0);
+	_pImmediateContext->HSSetShader(_pTerrainShadowHullShader, nullptr, 0);
+	_pImmediateContext->DSSetShader(_pTerrainShadowDomainShader, nullptr, 0);
+
+	_pImmediateContext->VSSetSamplers(0, 1, &_pSamplerLinear);
+	_pImmediateContext->DSSetSamplers(0, 1, &_pSamplerLinear);
+
+	_terrain.DrawToShadowMap(_pImmediateContext, cb, _camera);
+
+	//Render All Other Objects ---------------------------------------------------------
+
 	_pImmediateContext->IASetInputLayout(_pVertexLayout);
 
 	_pImmediateContext->VSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->HSSetConstantBuffers(0, 1, &_pConstantBuffer);
 	_pImmediateContext->DSSetConstantBuffers(0, 1, &_pConstantBuffer);
-
-	ShadowMapConstantBuffer cb;
-
-	cb.View = XMMatrixTranspose(view);
-	cb.Projection = XMMatrixTranspose(projection);
 
 	_pImmediateContext->VSSetShader(_pShadowMapVertexShader, nullptr, 0);
 	_pImmediateContext->PSSetShader(nullptr, nullptr, 0);
@@ -1209,8 +1228,18 @@ void Application::Draw()
 	_pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
 	_pImmediateContext->VSSetSamplers(0, 1, &_pSamplerLinear);
 	_pImmediateContext->DSSetSamplers(0, 1, &_pSamplerLinear);
+	_pImmediateContext->PSSetSamplers(2, 1, &_pSamplerShadow);
 
-	_terrain.Draw(_pImmediateContext, basicLight, _camera);
+	ID3D11ShaderResourceView * textureRV;
+
+	textureRV = _pShadowMap->GetShaderResourceView();
+	_pImmediateContext->PSSetShaderResources(7, 1, &textureRV);
+
+	_terrain.Draw(_pImmediateContext, basicLight, _camera, _pShadowMap);
+
+	_pImmediateContext->PSSetShaderResources(7, 1, null);
+
+	//Render all other objects
 
 	_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	_pImmediateContext->IASetInputLayout(_pVertexLayout);
@@ -1245,7 +1274,7 @@ void Application::Draw()
 	cb.MaxSamples = 1000;
 	cb.MinSamples = 1;
 
-	ID3D11ShaderResourceView * textureRV;
+	
 
 	textureRV = _pShadowMap->GetShaderResourceView();
 	_pImmediateContext->PSSetShaderResources(3, 1, &textureRV);

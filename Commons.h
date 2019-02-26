@@ -131,6 +131,16 @@ __declspec(align(16)) struct ShadowMapConstantBuffer
 	XMMATRIX World;
 	XMMATRIX View;
 	XMMATRIX Projection;
+
+	XMFLOAT4 WorldFrustumPlanes[6];
+
+	XMFLOAT3 EyePosW;
+
+	float MinDist;
+	float MaxDist;
+
+	float MinTess;
+	float MaxTess;
 };
 
 __declspec(align(16)) struct SSAOConstantBuffer

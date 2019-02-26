@@ -3,6 +3,7 @@
 #include "Commons.h"
 #include "GameObject.h"
 #include "Camera.h"
+#include "ShadowMapping.h"
 
 class Terrain
 {
@@ -34,7 +35,9 @@ public:
 
 	void Init(ID3D11Device* device, ID3D11DeviceContext* deviceContext, const InitInfo& initInfo);
 
-	void Draw(ID3D11DeviceContext* deviceContext, Light light, Camera* camera);
+	void Draw(ID3D11DeviceContext* deviceContext, Light light, Camera* camera, ShadowMap* pShadowMap);
+
+	void DrawToShadowMap(ID3D11DeviceContext* deviceContext, ShadowMapConstantBuffer &cb, Camera* camera);
 private:
 
 	void LoadHeightMap();
