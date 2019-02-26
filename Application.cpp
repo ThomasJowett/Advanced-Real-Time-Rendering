@@ -211,8 +211,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	tii.LayerMapFilename4 = L"Resources\\snow.dds";
 	tii.BlendMapFilename = L"Resources\\blend.dds";
 	tii.HeightScale = 50.0f;
-	tii.HeightMapWidth = 2046;
-	tii.HeightMapHeight = 2046;
+	tii.HeightMapWidth = 2049;
+	tii.HeightMapHeight = 2049;
 	tii.CellSpacing = 0.5f;
 
 	_terrain.Init(_pd3dDevice, _pImmediateContext, tii);
@@ -1129,7 +1129,7 @@ void Application::Update(float deltaTime)
 
 	basicLight.Direction.x = sin(counter)*10;
 
-	_pShadowMap->BuildShadowTransforms(basicLight);
+	_pShadowMap->BuildShadowTransforms(basicLight, _camera->GetPosition());
 }
 
 void Application::Draw()

@@ -32,7 +32,6 @@
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="Utilities.h" />
     <ClInclude Include="ProceduralLandscape.h" />
-    <ClInclude Include="noiseutils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
@@ -49,7 +48,6 @@
     <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="Utilities.cpp" />
     <ClCompile Include="ProceduralLandscape.cpp" />
-    <ClCompile Include="noiseutils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">

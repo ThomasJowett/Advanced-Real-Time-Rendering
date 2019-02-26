@@ -59,11 +59,12 @@ void ShadowMap::BindDsvAndSetNullRenderTarget(ID3D11DeviceContext * deviceContex
 	deviceContext->ClearDepthStencilView(_shadowMapDepthStencil, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
-void ShadowMap::BuildShadowTransforms(Light light)
+void ShadowMap::BuildShadowTransforms(Light light, XMFLOAT3 cameraPosition)
 {
 	XMVECTOR lightDirection = XMLoadFloat3(&light.Direction);
-	XMVECTOR lightPosition = lightDirection;
-	XMVECTOR targetPosition = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	XMVECTOR lightPosition = XMLoadFloat3(&cameraPosition) + lightDirection;
+	//XMVECTOR targetPosition = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	XMVECTOR targetPosition = lightPosition - lightDirection;
 	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 	XMMATRIX view = XMMatrixLookAtLH(lightPosition, targetPosition, up);

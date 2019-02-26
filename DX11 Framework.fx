@@ -145,7 +145,7 @@ static const float SMAP_DX = 1.0f / SMAP_SIZE;
 float CalcShadowFactor(float4 shadowPosH)
 {
     //if pixel is outside the shadowmap projection then return no shadow
-    if(shadowPosH.x > 1.0f || shadowPosH.x < 0.0f || shadowPosH.z > 1.0f || shadowPosH.z < 0.0f ||shadowPosH.y > 1.0f || shadowPosH.y < 0.0f)
+    if (shadowPosH.x > 1.0f || shadowPosH.x < 0.0f || shadowPosH.z > 1.0f || shadowPosH.z < 0.0f || shadowPosH.y > 1.0f || shadowPosH.y < 0.0f)
         return 1.0f;
 
 	// Complete projection by doing division by w.
@@ -210,9 +210,9 @@ float4 NormalPS(VS_OUTPUT_NORMAL input) : SV_Target
 	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
 	float3 specular = float3(0.0f, 0.0f, 0.0f);
 
-	//float shadow = CalcShadowFactor(input.ShadowPosH);
+	float shadow = CalcShadowFactor(input.ShadowPosH);
 
-	float shadow = CalcShadow(input.ShadowPosH);
+	//float shadow = CalcShadow(input.ShadowPosH);
 
 	float3 lightLecNorm = normalize(light.LightDir);
 	// Compute Colour

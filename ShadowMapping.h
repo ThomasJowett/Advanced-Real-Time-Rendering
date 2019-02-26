@@ -12,7 +12,7 @@ public:
 
 	void BindDsvAndSetNullRenderTarget(ID3D11DeviceContext* deviceContext);
 
-	void BuildShadowTransforms(Light light);
+	void BuildShadowTransforms(Light light, XMFLOAT3 cameraPosition);
 
 	XMFLOAT4X4 GetView() const { return _view; }
 	XMFLOAT4X4 GetProjection() const { return _projection; }

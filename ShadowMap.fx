@@ -2,6 +2,10 @@
 // File: ShadowMap.fx
 //--------------------------------------------------------------------------------------
 
+Texture2D txHeightMap : register(t1);
+
+SamplerState samLinear : register(s0);
+
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
@@ -40,3 +44,32 @@ VS_OUTPUT ShadowMapVS(VS_INPUT input)
 
 	return output;
 }
+
+struct VS_TERRAIN_INPUT
+{
+    float3 PosL : POSITION;
+    float2 Tex : TEXCOORD;
+    float2 BoundsY : TEXCOORD;
+};
+
+struct VS_TERRAIN_OUTPUT
+{
+    float3 PosW : POSITION;
+    float2 Tex : TEXCOORD0;
+    float2 BoundsY : TEXCOORD1;
+};
+
+VS_TERRAIN_OUTPUT ShadowMapTerrainVS(VS_TERRAIN_INPUT input)
+{
+    VS_TERRAIN_OUTPUT output;
+
+    output.PosW = input.PosL;
+
+    output.PosW.y = txHeightMap.SampleLevel(samLinear, input.Tex, 0).r;
+
+    output.Tex = input.Tex;
+    output.BoundsY = input.BoundsY;
+
+    return output;
+};
+

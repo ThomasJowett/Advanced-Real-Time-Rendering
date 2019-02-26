@@ -104,6 +104,7 @@ __declspec(align(16)) struct TerrainConstantBuffer
 	XMMATRIX World;
 	XMMATRIX View;
 	XMMATRIX Projection;
+	XMMATRIX ShadowTransform;
 
 	SurfaceInfo surface;
 	Light light;

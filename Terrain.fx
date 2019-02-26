@@ -9,10 +9,13 @@ Texture2D txLayer1 : register(t3);
 Texture2D txLayer2 : register(t4);
 Texture2D txLayer3 : register(t5);
 Texture2D txLayer4 : register(t6);
+Texture2D txShadow : register(t7);
 
 SamplerState samLinear : register(s0);
 
 SamplerState samHeightMap : register(s1);
+
+SamplerComparisonState samShadow : register(s2);
 
 struct SurfaceInfo
 {
@@ -51,6 +54,7 @@ cbuffer ConstantBuffer : register (b0)
 	matrix World;
     matrix View;
     matrix Projection;
+    matrix ShadowTransform;
 
     SurfaceInfo surface;
     Light light;
@@ -82,6 +86,44 @@ VS_OUTPUT TerrainVS(VS_INPUT input)
 	output.BoundsY = input.BoundsY;
 
 	return output;
+}
+
+//Helper function that calculate if the pixel is a shadow
+static const float SMAP_SIZE = 4096.0f;
+static const float SMAP_DX = 1.0f / SMAP_SIZE;
+
+//Soft Shadows
+float CalcShadowFactor(float4 shadowPosH)
+{
+    //if pixel is outside the shadowmap projection then return no shadow
+    if (shadowPosH.x > 1.0f || shadowPosH.x < 0.0f || shadowPosH.z > 1.0f || shadowPosH.z < 0.0f || shadowPosH.y > 1.0f || shadowPosH.y < 0.0f)
+        return 1.0f;
+
+	// Complete projection by doing division by w.
+    shadowPosH.xyz /= shadowPosH.w;
+
+	// Depth in NDC space.
+    float depth = shadowPosH.z - 0.001f;
+
+	// Texel size.
+    const float dx = SMAP_DX;
+
+    float percentLit = 0.0f;
+    const float2 offsets[9] =
+    {
+        float2(-dx, -dx), float2(0.0f, -dx), float2(dx, -dx),
+		float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(dx, 0.0f),
+		float2(-dx, +dx), float2(0.0f, +dx), float2(dx, +dx)
+    };
+
+	[unroll]
+    for (int i = 0; i < 9; ++i)
+    {
+        percentLit += txShadow.SampleCmpLevelZero(samShadow,
+			shadowPosH.xy + offsets[i], depth).r;
+    }
+
+    return percentLit /= 9.0f;
 }
 
 float CalcTessFactor(float3 p)
@@ -209,6 +251,7 @@ struct DS_OUTPUT
     float3 PosW : POSITION;
     float2 Tex : TEXCOORD0;
     float2 TiledTex : TEXCOORD1;
+    float4 ShadowPosH : TEXCOORD2;
 };
 
 [domain("quad")]
@@ -237,6 +280,8 @@ DS_OUTPUT DS(HS_CONSTANT_DATA_OUTPUT patchTess, float2 uv : SV_DomainLocation, c
     output.PosH = float4(output.PosW, 1.0f);
     output.PosH = mul(output.PosH, View);
     output.PosH = mul(output.PosH, Projection);
+
+    output.ShadowPosH = mul(float4(output.PosW.xyz, 1.0), ShadowTransform);
 	
     return output;
 }
@@ -256,6 +301,10 @@ float4 TerrainPS(DS_OUTPUT input) :SV_Target
     float3 tangent = normalize(float3(2.0f * WorldCellSpace, rightY - leftY, 0.0f));
     float3 bitangent = normalize(float3(0.0f, bottomY -topY, 2.0f * WorldCellSpace));
     float3 normalW = cross(bitangent, tangent);
+
+    normalW.b *= -1;
+
+    //return float4(normalW, 1.0f);
 
     float3 toEye = EyePosW - input.PosW;
 
@@ -292,6 +341,8 @@ float4 TerrainPS(DS_OUTPUT input) :SV_Target
     float3 diffuse = float3(0.0f, 0.0f, 0.0f);
     float3 specular = float3(0.0f, 0.0f, 0.0f);
 
+    float shadow = CalcShadowFactor(input.ShadowPosH);
+
     float3 lightVecNorm = normalize(light.LightDir);
 
     float3 r = reflect(-lightVecNorm, normalW);
@@ -315,7 +366,9 @@ float4 TerrainPS(DS_OUTPUT input) :SV_Target
 
     float4 finalColour;
 
-    finalColour.rgb = (texColour.rgb * (ambient + diffuse)) + specular;
+    //finalColour.rgb = (texColour.rgb * (ambient + diffuse)) + specular;
+
+    finalColour.rgb = (texColour.rgb * (ambient + (diffuse * shadow)) + (specular * shadow));
 
     finalColour.a = surface.DiffuseMtrl.a;
 
