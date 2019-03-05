@@ -48,8 +48,17 @@ struct SkeletalMeshData
 	int GetVertexCount() { return vertices.size() / DIMENSIONS; }
 };
 
+struct SkinningData
+{
+	std::vector<std::string> jointOrder;
+
+};
+
 struct AnimatedModelData
 {
 	SkeletonData joints;
-	SkeletalMeshData meshdata;
+	SkeletalMeshData meshData;
+
+	AnimatedModelData(SkeletonData joints, SkeletalMeshData meshData)
+		:joints(joints), meshData(meshData) {}
 };

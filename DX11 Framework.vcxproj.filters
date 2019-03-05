@@ -74,6 +74,7 @@
     <ClCompile Include="Joint.cpp" />
     <ClCompile Include="AnimatedModel.cpp" />
     <ClCompile Include="TinyXML2.cpp" />
+    <ClCompile Include="ColladaLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">
