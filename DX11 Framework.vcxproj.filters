@@ -12,6 +12,9 @@
     <Filter Include="Resource Files\Textures">
       <UniqueIdentifier>{84a4d56f-682d-4b12-a7c9-064cc08bce09}</UniqueIdentifier>
     </Filter>
+    <Filter Include="SkeletalAnimation">
+      <UniqueIdentifier>{9baaa1eb-813c-4946-8909-5bdd1838995d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
@@ -32,6 +35,26 @@
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="Utilities.h" />
     <ClInclude Include="ProceduralLandscape.h" />
+    <ClInclude Include="KeyFrame.h">
+      <Filter>SkeletalAnimation</Filter>
+    </ClInclude>
+    <ClInclude Include="JointTransform.h">
+      <Filter>SkeletalAnimation</Filter>
+    </ClInclude>
+    <ClInclude Include="Joint.h">
+      <Filter>SkeletalAnimation</Filter>
+    </ClInclude>
+    <ClInclude Include="AnimatedModel.h">
+      <Filter>SkeletalAnimation</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation.h">
+      <Filter>SkeletalAnimation</Filter>
+    </ClInclude>
+    <ClInclude Include="TinyXML2.h" />
+    <ClInclude Include="ColladaLoader.h" />
+    <ClInclude Include="AnimatedModelData.h">
+      <Filter>SkeletalAnimation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
@@ -48,6 +71,9 @@
     <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="Utilities.cpp" />
     <ClCompile Include="ProceduralLandscape.cpp" />
+    <ClCompile Include="Joint.cpp" />
+    <ClCompile Include="AnimatedModel.cpp" />
+    <ClCompile Include="TinyXML2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">

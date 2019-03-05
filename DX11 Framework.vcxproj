@@ -372,10 +372,12 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AnimatedModel.cpp" />
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
+    <ClCompile Include="Joint.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="Mesh.cpp" />
@@ -385,6 +387,7 @@
     <ClCompile Include="ShadowMapping.cpp" />
     <ClCompile Include="SSAO.cpp" />
     <ClCompile Include="Terrain.cpp" />
+    <ClCompile Include="TinyXML2.cpp" />
     <ClCompile Include="Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -493,12 +496,19 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AnimatedModel.h" />
+    <ClInclude Include="AnimatedModelData.h" />
+    <ClInclude Include="Animation.h" />
     <ClInclude Include="Application.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="ColladaLoader.h" />
     <ClInclude Include="Commons.h" />
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GeometryGenerator.h" />
+    <ClInclude Include="Joint.h" />
+    <ClInclude Include="JointTransform.h" />
+    <ClInclude Include="KeyFrame.h" />
     <ClInclude Include="Lights.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="ObJLoader.h" />
@@ -509,6 +519,7 @@
     <ClInclude Include="ShadowMapping.h" />
     <ClInclude Include="SSAO.h" />
     <ClInclude Include="Terrain.h" />
+    <ClInclude Include="TinyXML2.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="Utilities.h" />
     <ClInclude Include="Vector.h" />

@@ -111,6 +111,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
         return E_FAIL;
     }
 
+	//Load Textures ------------------------------------------------------------------------------------------------
+	//TODO: make a texture 2d manager that automatically releases all the textures when program closes
 	ID3D11ShaderResourceView * _pNormalEarthTextureRV;
 	ID3D11ShaderResourceView *_pDiffuseEarthTextureRV;
 	ID3D11ShaderResourceView * _pHeightEarthTextureRV;
@@ -829,6 +831,7 @@ void Application::Cleanup()
     if (_pVertexLayout) _pVertexLayout->Release();
 	if (_pPostProcessLayout) _pPostProcessLayout->Release();
 	if (_pTerrainLayout) _pTerrainLayout->Release();
+	if (_pSSOALayout) _pSSOALayout->Release();
 
     if (_pNormalVertexShader) _pNormalVertexShader->Release();
     if (_pNormalPixelShader) _pNormalPixelShader->Release();
@@ -846,7 +849,17 @@ void Application::Cleanup()
 	if (_pShadowMapVertexShader)_pShadowMapVertexShader->Release();
 	if (_pHullShader) _pHullShader->Release();
 	if (_pDomainShader) _pDomainShader->Release();
+	if (_pSSAOBlurVertexShader) _pSSAOBlurVertexShader->Release();
 	if (_pDisplacementDomainShader) _pDisplacementDomainShader->Release();
+	if (_pSSAOBlurPixelShader) _pSSAOBlurPixelShader->Release();
+	if (_pTerrainVertexShader) _pTerrainVertexShader->Release();
+	if (_pTerrainHullShader) _pTerrainHullShader->Release();
+	if (_pTerrainDomainShader) _pTerrainDomainShader->Release();
+	if (_pTerrainPixelShader) _pTerrainPixelShader->Release();
+	if (_pTerrainShadowVertexShader) _pTerrainShadowVertexShader->Release();
+	if (_pTerrainShadowHullShader) _pTerrainShadowHullShader->Release();
+	if (_pTerrainShadowDomainShader) _pTerrainShadowDomainShader->Release();
+	if (_pDisplacmentPixelShader) _pDisplacmentPixelShader->Release();
 
     if (_pRenderTargetView) _pRenderTargetView->Release();
     if (_pSwapChain) _pSwapChain->Release();

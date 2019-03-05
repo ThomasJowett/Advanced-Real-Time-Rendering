@@ -92,6 +92,18 @@ public:
 		return (v1 * alpha) + (v2 * (1 - alpha));
 	}
 
+	//spherically interpolate between v1 and v2
+	static Vector3D Slerp(Vector3D v1, Vector3D v2, float alpha)
+	{
+		float dot = Dot(v1, v2);
+		float theta = acos(dot) * alpha;
+
+		Vector3D relativeVec = v2 - v1 * dot;
+		relativeVec.Normalize();
+
+		return ((v1 * cos(theta)) + (relativeVec * sin(theta)));
+	}
+
 	//Operators----------------------------------------------------------------
 
 	//multiples each component of the vector by the scaler

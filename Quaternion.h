@@ -17,11 +17,12 @@
 * orientation.
 */
 
-#include <float.h>
-#include <math.h>
+#include <float.h>			//for FLT_EPSILON
+#include <math.h>			
 #include <directxmath.h>
 #include <d3d11_1.h>
 #include "Vector.h"
+
 
 using namespace DirectX;
 
@@ -106,10 +107,10 @@ public:
 		float sin_z_2 = sinf(0.5f*angles.z);
 
 		// and now compute quaternion
-		r = cos_z_2 * cos_y_2*cos_x_2 + sin_z_2 * sin_y_2*sin_x_2;
-		i = cos_z_2 * cos_y_2*sin_x_2 - sin_z_2 * sin_y_2*cos_x_2;
-		j = cos_z_2 * sin_y_2*cos_x_2 + sin_z_2 * cos_y_2*sin_x_2;
-		k = sin_z_2 * cos_y_2*cos_x_2 - cos_z_2 * sin_y_2*sin_x_2;
+		r = cos_z_2 * cos_y_2 * cos_x_2 + sin_z_2 * sin_y_2 * sin_x_2;
+		i = cos_z_2 * cos_y_2 * sin_x_2 - sin_z_2 * sin_y_2 * cos_x_2;
+		j = cos_z_2 * sin_y_2 * cos_x_2 + sin_z_2 * cos_y_2 * sin_x_2;
+		k = sin_z_2 * cos_y_2 * cos_x_2 - cos_z_2 * sin_y_2 * sin_x_2;
 	}
 
 	//from 3 euler angles in radians
@@ -172,6 +173,56 @@ public:
 	Quaternion UnitQuaternion()
 	{
 		return (*this).Scale(1 / (*this).GetMagnitude());
+	}
+
+	//Static------------------------------------------------------------------------------------
+
+	//sums the product of q1 and q2
+	double static Dot(Quaternion q1, Quaternion q2)
+	{
+		return q1.r * q2.r + q1.i * q2.i + q1.j * q2.j + q1.k * q2.k;
+	}
+
+	//Spherically interpolates between a and b
+	Quaternion static Slerp(Quaternion a, Quaternion b, double t)
+	{
+		Quaternion result = Quaternion();
+
+		//calculate angle between them
+		double cosHalfTheta = Dot(a, b);
+
+		//if a==b or a==-b then theta = 0 and we can return a
+		if (abs(cosHalfTheta) >= 1.0)
+		{
+			result = a;
+			return result;
+		}
+
+		//calculate temporary values
+		double halfTheta = acos(cosHalfTheta);
+		double sinHalfTheta = sqrt(1.0 - cosHalfTheta * cosHalfTheta);
+
+		//if theta = 180 degrees then result is not fully defined
+		//we could rotate around any axis normal to a or b
+
+		if (fabs(sinHalfTheta) < 0.001)
+		{
+			result.r = (a.r * 0.5 + b.r * 0.5);
+			result.i = (a.i * 0.5 + b.i * 0.5);
+			result.j = (a.j * 0.5 + b.j * 0.5);
+			result.k = (a.k * 0.5 + b.k * 0.5);
+			return result;
+		}
+
+		double ratioA = sin((1 - t)*halfTheta) / sinHalfTheta;
+		double ratioB = sin(t *halfTheta) / sinHalfTheta;
+
+		//calculate Quaternion
+		result.r = (a.r * ratioA + b.r * ratioB);
+		result.i = (a.i * ratioA + b.i * ratioB);
+		result.j = (a.j * ratioA + b.j * ratioB);
+		result.k = (a.k * ratioA + b.k * ratioB);
+		return result;
 	}
 
 	//Operators---------------------------------------------------------------------------------

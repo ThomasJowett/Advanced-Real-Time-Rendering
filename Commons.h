@@ -149,9 +149,9 @@ __declspec(align(16)) struct SSAOConstantBuffer
 	XMFLOAT4 OffsetVectors[14];
 	XMFLOAT4 FrustumCorners[4];
 
-	FLOAT OcclusionRadius = 0.3f;
+	FLOAT OcclusionRadius = 0.2f;
 	FLOAT OcculsionFadeStart = 0.2f;
-	FLOAT OcclusionFadeEnd = 2.0f;
+	FLOAT OcclusionFadeEnd = 1.0f;
 	FLOAT SurfaceEpsilon = 0.05f;
 
 	INT SampleCount = 14;
@@ -168,6 +168,8 @@ __declspec(align(16)) struct SSAOBlurConstantBuffer
 	};
 	BOOL HorizontalBlur;
 };
+
+
 
 struct IndexedModel
 {
