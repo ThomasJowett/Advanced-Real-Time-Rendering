@@ -49,11 +49,13 @@ SkinningData ColladaLoader::LoadSkin(tinyxml2::XMLElement * node, int maxWeights
 		if (strcmp(pInputNode->Attribute("semantic"), "JOINT") == 0)
 		{
 			jointDataId = pInputNode->Attribute("source");
+			//remove the # from the start
 			jointDataId.erase(jointDataId.begin());
 		}
 		else if (strcmp(pInputNode->Attribute("semantic"), "WEIGHT") == 0)
 		{
 			weightDataId = pInputNode->Attribute("source");
+			//remove the # from the start
 			weightDataId.erase(weightDataId.begin());
 		}
 
@@ -126,19 +128,92 @@ SkeletonData ColladaLoader::LoadSkeleton(tinyxml2::XMLElement * node, std::vecto
 	}
 	tinyxml2::XMLElement * pHeadNode = pArmatureNode->FirstChildElement("node");
 
-	JointData headJoint = LoadJointData(pHeadNode, true);
+	JointData* headJoint = LoadJointData(pHeadNode, true, jointOrder);
 
-	return SkeletonData(jointOrder.size(), headJoint);
+	return SkeletonData(jointOrder.size(), *headJoint);
 }
 
-JointData ColladaLoader::LoadJointData(tinyxml2::XMLElement * node, bool isRoot)
+JointData* ColladaLoader::LoadJointData(tinyxml2::XMLElement * node, bool isRoot, std::vector<std::string> jointOrder)
 {
 	std::string nameId = node->Attribute("id");
-	int index;
-	XMMATRIX matrix = XMMATRIX();
-	//TODO: load matrix
+	auto it = std::find(jointOrder.begin(), jointOrder.end(), nameId);
+	int index = std::distance(jointOrder.begin(), it);
+
+	//load the raw data as a list of strings
+	std::vector<std::string> matrixRawData = Util::SplitString(node->FirstChildElement("matrix")->GetText(), ' ');
+
+	//convert the raw data into a matrix
+	XMMATRIX matrix = XMMATRIX(atof(matrixRawData[0].c_str()), atof(matrixRawData[1].c_str()), atof(matrixRawData[2].c_str()), atof(matrixRawData[3].c_str()),
+		atof(matrixRawData[4].c_str()), atof(matrixRawData[5].c_str()), atof(matrixRawData[6].c_str()), atof(matrixRawData[7].c_str()),
+		atof(matrixRawData[8].c_str()), atof(matrixRawData[9].c_str()), atof(matrixRawData[10].c_str()), atof(matrixRawData[11].c_str()),
+		atof(matrixRawData[12].c_str()), atof(matrixRawData[13].c_str()), atof(matrixRawData[14].c_str()), atof(matrixRawData[15].c_str()));
+
 	XMMatrixTranspose(matrix);
-	JointData joint = JointData(index, nameId, matrix);
+	if (isRoot)
+	{
+		//rotate the root bone so that it is facing upwards
+		matrix = matrix * XMMatrixRotationX(-90);
+	}
+	JointData* joint = new JointData(index, nameId, matrix);
+
+
+	tinyxml2::XMLElement * childNode = node->FirstChildElement("node");
+	while (childNode)
+	{
+		joint->AddChild(LoadJointData(childNode, false, jointOrder));
+		childNode = childNode->NextSiblingElement("node");
+	}
 
 	return joint;
+}
+
+SkeletalMeshData ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, std::vector<VertexSkinData> vertexSkinData)
+{
+	std::vector<float> verticesArray;
+	std::vector<float> normalsArray;
+	std::vector<float> texturesArray;
+	std::vector<int> indicesArray;
+	std::vector<int> jointIdsArray;
+	std::vector<float> weightsArray;
+
+	tinyxml2::XMLElement * pMeshNode = node->FirstChildElement("geometry")->FirstChildElement("mesh");
+
+	//read the raw data ----------------------------------------------------------------------------------------------
+
+	//read the positions
+
+	std::string positionsId = pMeshNode->FirstChildElement("vertices")->FirstChildElement("input")->Attribute("source");
+	//remove the # from the begining
+	positionsId.erase(positionsId.begin());
+
+	tinyxml2::XMLElement * pSourceNode = pMeshNode->FirstChildElement("source");
+
+	while (pSourceNode)
+	{
+		if (strcmp(pSourceNode->Attribute("id"), positionsId.c_str()) == 0)
+		{
+			tinyxml2::XMLElement * pPositionData = pSourceNode->FirstChildElement("float_array");
+
+			int count = atoi(pPositionData->Attribute("count"));
+
+			std::vector<std::string> positionRawData = Util::SplitString(pPositionData->GetText(), ' ');
+
+			for (int i = 0; i < count / 3; i++)
+			{
+				float x = atof(positionRawData[i * 3].c_str());
+				float y = atof(positionRawData[i * 3 + 1].c_str());
+				float z = atof(positionRawData[i * 3 + 2].c_str());
+				//TODO:translate veticies
+				//TODO:push_back into vertices
+			}
+		}
+
+		pSourceNode = pSourceNode->NextSiblingElement("source");
+	}
+
+	//read the normals
+
+	//read texture coordinates
+
+	return SkeletalMeshData();
 }

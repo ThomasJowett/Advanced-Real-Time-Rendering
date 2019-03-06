@@ -15,7 +15,7 @@ namespace ColladaLoader
 
 	SkeletonData LoadSkeleton(tinyxml2::XMLElement* node, std::vector<std::string> jointOrder);
 
-	JointData LoadJointData(tinyxml2::XMLElement * node, bool isRoot);
+	JointData* LoadJointData(tinyxml2::XMLElement * node, bool isRoot, std::vector<std::string> jointOrder);
 
 	SkeletalMeshData LoadGeometry(tinyxml2::XMLElement* node, std::vector<VertexSkinData> vertexSkinData);
 }
