@@ -4,6 +4,7 @@
 #include "ObJLoader.h"
 #include "PostProcess.h"
 #include <iostream>
+#include "ColladaLoader.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -135,6 +136,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	ID3D11ShaderResourceView *_pMetalGunTextureRV;
 	ID3D11ShaderResourceView *_pAOGunTextureRV;
 	ID3D11ShaderResourceView *_pEmissiveGunTextureRV;
+
+	ColladaLoader::LoadModel("Resources/model.dae", 3);
 
 	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Diffuse.dds", nullptr, &_pDiffuseGroundTextureRV);
 	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Height.dds", nullptr, &_pHeightGroundTextureRV);

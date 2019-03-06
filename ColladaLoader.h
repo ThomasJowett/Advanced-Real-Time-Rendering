@@ -7,25 +7,15 @@
 
 namespace ColladaLoader
 {
-	AnimatedModelData Load(const char* filename, int maxWeights);
+	AnimatedModelData LoadModel(const char* filename, int maxWeights);
 
-	struct SkinLoader
-	{
-		SkinLoader(tinyxml2::XMLElement* node);
-		SkinningData ExtractSkinData();
-	};
+	AnimationData LoadAnimation(const char* filename);
 
-	struct SkeletonLoader
-	{
-		SkeletonLoader(tinyxml2::XMLElement* node);
-		SkeletonData ExtractSkeletonData();
-	};
+	SkinningData LoadSkin(tinyxml2::XMLElement* node, int maxWeights);
 
-	struct GeometryLoader
-	{
-		GeometryLoader(tinyxml2::XMLElement* node);
-		SkeletalMeshData ExtractMeshData();
-	};
+	SkeletonData LoadSkeleton(tinyxml2::XMLElement* node, std::vector<std::string> jointOrder);
+
+	JointData LoadJointData(tinyxml2::XMLElement * node, bool isRoot);
+
+	SkeletalMeshData LoadGeometry(tinyxml2::XMLElement* node, std::vector<VertexSkinData> vertexSkinData);
 }
-
-

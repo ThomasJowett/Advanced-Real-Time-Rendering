@@ -48,10 +48,47 @@ struct SkeletalMeshData
 	int GetVertexCount() { return vertices.size() / DIMENSIONS; }
 };
 
+struct VertexSkinData
+{
+	std::vector<int> jointIds;
+	std::vector<float> weights;
+
+	void SetNumberOfEffects(int numberOfEffects)
+	{
+		jointIds.resize(numberOfEffects);
+		weights.resize(numberOfEffects);
+	}
+
+	void AddJointEffect(int jointId, float weight)
+	{
+		for (int i = 0; i < weights.size(); i++)
+		{
+			if (weight > weights[i])
+			{
+				jointIds.emplace(jointIds.begin() + i, jointId);
+				weights.emplace(weights.begin() + i, weight);
+				break;
+			}
+		}
+	}
+
+	void LimitJointNumber(int max)
+	{
+		if (jointIds.size() > max)
+		{
+			jointIds.resize(max);
+			weights.resize(max);
+		}
+	}
+};
+
 struct SkinningData
 {
 	std::vector<std::string> jointOrder;
+	std::vector<VertexSkinData> verticesSkinData;
 
+	SkinningData(std::vector<std::string> jointOrder, std::vector<VertexSkinData> verticesSkinData)
+		:jointOrder(jointOrder), verticesSkinData(verticesSkinData) {}
 };
 
 struct AnimatedModelData
@@ -61,4 +98,25 @@ struct AnimatedModelData
 
 	AnimatedModelData(SkeletonData joints, SkeletalMeshData meshData)
 		:joints(joints), meshData(meshData) {}
+
+	AnimatedModelData()
+		:joints(SkeletonData(0, JointData(0, "null", XMMATRIX()))) {};
+};
+
+struct JointTransformData
+{
+	std::string jointNameId;
+	XMMATRIX jointLocalTransform;
+};
+
+struct KeyFrameData
+{
+	float time;
+	std::vector<JointTransformData> jointTransforms;
+};
+
+struct AnimationData
+{
+	float lengthSeconds;
+	std::vector<KeyFrameData> keyframes;
 };
