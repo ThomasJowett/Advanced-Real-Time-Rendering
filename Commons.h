@@ -48,6 +48,13 @@ struct TerrainVertex
 
 };
 
+struct SkeletalVertex
+{
+	XMFLOAT3 PosL;
+	XMFLOAT3 NormL;
+	XMFLOAT3 Tangent;
+};
+
 struct SurfaceInfo
 {
 	XMFLOAT4 AmbientMtrl;

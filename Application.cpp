@@ -6,6 +6,11 @@
 #include <iostream>
 #include "ColladaLoader.h"
 
+#include "imGUI/imgui.h"
+#include "imGUI/imgui_impl_dx11.h"
+#include "imGUI/imgui_impl_win32.h"
+
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	PAINTSTRUCT ps;
@@ -29,6 +34,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+
 bool Application::HandleKeyboard(MSG msg, float deltaTime)
 {
 	switch (msg.wParam)
@@ -41,8 +47,12 @@ bool Application::HandleKeyboard(MSG msg, float deltaTime)
 	return false;
 }
 
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 bool Application::HandleMouse(MSG msg, float deltaTime)
 {
+	if (ImGui_ImplWin32_WndProcHandler(msg.hwnd, msg.message, msg.wParam, msg.lParam))
+		return true;
+
 	switch (msg.wParam)
 	{
 		
@@ -111,6 +121,14 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
         return E_FAIL;
     }
+
+	//setup ImGui
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	ImGui_ImplWin32_Init(_hWnd);
+	ImGui_ImplDX11_Init(_pd3dDevice, _pImmediateContext);
+	ImGui::StyleColorsDark();
 
 	//Load Textures ------------------------------------------------------------------------------------------------
 	//TODO: make a texture 2d manager that automatically releases all the textures when program closes
@@ -1042,6 +1060,25 @@ void Application::DrawSceneToSSAODepthMap()
 	}
 }
 
+void Application::DrawImGui()
+{
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	//Createtestwindow
+	ImGui::Begin("Test");
+	ImGui::End();
+
+	ImGui::ShowDemoWindow();
+
+	//Assemble together Draw data
+	ImGui::Render();
+
+	//RenderDrawData
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+}
+
 void Application::Update(float deltaTime)
 {
 	// Move gameobject
@@ -1179,6 +1216,7 @@ void Application::Update(float deltaTime)
 
 void Application::Draw()
 {
+	
 	//bind the shadow map render target
 	_pShadowMap->BindDsvAndSetNullRenderTarget(_pImmediateContext);
 
@@ -1446,5 +1484,8 @@ void Application::Draw()
     //
     // Present our back buffer to our front buffer
     //
+
+	DrawImGui();
+
     _pSwapChain->Present(0, 0);
 }

@@ -1,5 +1,5 @@
 #include "ColladaLoader.h"
-
+#include "Quaternion.h"
 
 AnimatedModelData ColladaLoader::LoadModel(const char * filename, int maxWeights)
 {
@@ -152,7 +152,7 @@ JointData* ColladaLoader::LoadJointData(tinyxml2::XMLElement * node, bool isRoot
 	if (isRoot)
 	{
 		//rotate the root bone so that it is facing upwards
-		matrix = matrix * XMMatrixRotationX(-90);
+		matrix = matrix * XMMatrixRotationX(-XM_PIDIV2);
 	}
 	JointData* joint = new JointData(index, nameId, matrix);
 
@@ -176,20 +176,52 @@ SkeletalMeshData ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, std::v
 	std::vector<int> jointIdsArray;
 	std::vector<float> weightsArray;
 
+	std::vector<VertexData> verts;
+	std::vector<XMFLOAT3> normals;
+	std::vector<XMFLOAT2> TexCoords;
+	std::vector<int> indices;
+
+
 	tinyxml2::XMLElement * pMeshNode = node->FirstChildElement("geometry")->FirstChildElement("mesh");
 
 	//read the raw data ----------------------------------------------------------------------------------------------
 
-	//read the positions
-
+	//read in the Ids
 	std::string positionsId = pMeshNode->FirstChildElement("vertices")->FirstChildElement("input")->Attribute("source");
 	//remove the # from the begining
 	positionsId.erase(positionsId.begin());
 
+	std::string normalsId;
+	std::string texCoordsId;
+
+	tinyxml2::XMLElement * pPolyNode = pMeshNode->FirstChildElement("polylist");
+
+	tinyxml2::XMLElement * pInputNode = pPolyNode->FirstChildElement("input");
+
+	int typeCount = 0;
+
+	while (pInputNode)
+	{
+		typeCount++;
+		if (strcmp(pInputNode->Attribute("semantic"), "NORMAL") == 0)
+		{
+			normalsId = pInputNode->Attribute("source");
+			normalsId.erase(normalsId.begin());
+		}
+		else if (strcmp(pInputNode->Attribute("semantic"), "TEXCOORD") == 0)
+		{
+			texCoordsId = pInputNode->Attribute("source");
+			texCoordsId.erase(texCoordsId.begin());
+		}
+		pInputNode = pInputNode->NextSiblingElement("input");
+	}
+	
+	
 	tinyxml2::XMLElement * pSourceNode = pMeshNode->FirstChildElement("source");
 
 	while (pSourceNode)
 	{
+		//read the positions
 		if (strcmp(pSourceNode->Attribute("id"), positionsId.c_str()) == 0)
 		{
 			tinyxml2::XMLElement * pPositionData = pSourceNode->FirstChildElement("float_array");
@@ -203,17 +235,66 @@ SkeletalMeshData ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, std::v
 				float x = atof(positionRawData[i * 3].c_str());
 				float y = atof(positionRawData[i * 3 + 1].c_str());
 				float z = atof(positionRawData[i * 3 + 2].c_str());
-				//TODO:translate veticies
-				//TODO:push_back into vertices
+
+				Vector3D position = { x,y,z };
+
+				Quaternion rotation = Quaternion(-XM_PIDIV2, 0, 0);
+
+				rotation.RotateVectorByQuaternion(position);
+				verts.push_back(VertexData(verts.size(), position, vertexSkinData[verts.size()]));
+			}
+		}
+		//read the normals
+		else if (strcmp(pSourceNode->Attribute("id"), normalsId.c_str()) == 0)
+		{
+			tinyxml2::XMLElement * pNormalData = pSourceNode->FirstChildElement("float_array");
+
+			int count = atoi(pNormalData->Attribute("count"));
+
+			std::vector<std::string> normalRawData = Util::SplitString(pNormalData->GetText(), ' ');
+
+			for (int i = 0; i < count / 3; i++)
+			{
+				float x = atof(normalRawData[i * 3].c_str());
+				float y = atof(normalRawData[i * 3 + 1].c_str());
+				float z = atof(normalRawData[i * 3 + 2].c_str());
+				Vector3D normal = { x,y,z };
+				Quaternion rotation = Quaternion(-XM_PIDIV2, 0, 0);
+				rotation.RotateVectorByQuaternion(normal);
+				normals.push_back(XMFLOAT3(normal.x, normal.y, normal.z));
+			}
+		}
+		//read texture coordinates
+		else if (strcmp(pSourceNode->Attribute("id"), texCoordsId.c_str()) == 0)
+		{
+			tinyxml2::XMLElement * ptexCoordData = pSourceNode->FirstChildElement("float_array");
+
+			int count = atoi(ptexCoordData->Attribute("count"));
+
+			std::vector<std::string> texCoordsRawData = Util::SplitString(ptexCoordData->GetText(), ' ');
+
+			for (int i = 0; i < count / 2; i++)
+			{
+				float u = atof(texCoordsRawData[i * 2].c_str());
+				float v = atof(texCoordsRawData[i * 2 + 1].c_str());
+				TexCoords.push_back(XMFLOAT2(u, v));
 			}
 		}
 
 		pSourceNode = pSourceNode->NextSiblingElement("source");
 	}
 
-	//read the normals
+	//Assemble the vertices--------------------------------------------------------------------------------------------------------
 
-	//read texture coordinates
+	std::vector<std::string> indexRawData = Util::SplitString(pPolyNode->FirstChildElement("p")->GetText(), ' ');
 
+	for (int i = 0; i < indexRawData.size() / typeCount; i++)
+	{
+		int positionIndex = atoi(indexRawData[i * typeCount].c_str());
+		int normalIndex = atoi(indexRawData[i * typeCount + 1].c_str());
+		int texCoordIndex = atoi(indexRawData[i * typeCount + 2].c_str());
+
+		//VertexData currentVertex = verts.at
+	}
 	return SkeletalMeshData();
 }

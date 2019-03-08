@@ -164,6 +164,8 @@ private:
 	void DrawSceneToShadowMap();
 	void DrawSceneToSSAODepthMap();
 
+	void DrawImGui();
+
 	float counter = 0.01f;
 	float heightMapScale = 0.04f;
 

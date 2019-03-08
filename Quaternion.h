@@ -178,7 +178,7 @@ public:
 	//Static------------------------------------------------------------------------------------
 
 	//sums the product of q1 and q2
-	double static Dot(Quaternion q1, Quaternion q2)
+	float static Dot(Quaternion q1, Quaternion q2)
 	{
 		return q1.r * q2.r + q1.i * q2.i + q1.j * q2.j + q1.k * q2.k;
 	}
@@ -189,7 +189,7 @@ public:
 		Quaternion result = Quaternion();
 
 		//calculate angle between them
-		double cosHalfTheta = Dot(a, b);
+		float cosHalfTheta = Dot(a, b);
 
 		//if a==b or a==-b then theta = 0 and we can return a
 		if (abs(cosHalfTheta) >= 1.0)
@@ -199,23 +199,23 @@ public:
 		}
 
 		//calculate temporary values
-		double halfTheta = acos(cosHalfTheta);
-		double sinHalfTheta = sqrt(1.0 - cosHalfTheta * cosHalfTheta);
+		float halfTheta = acos(cosHalfTheta);
+		float sinHalfTheta = (float)sqrt(1.0 - cosHalfTheta * cosHalfTheta);
 
 		//if theta = 180 degrees then result is not fully defined
 		//we could rotate around any axis normal to a or b
 
 		if (fabs(sinHalfTheta) < 0.001)
 		{
-			result.r = (a.r * 0.5 + b.r * 0.5);
-			result.i = (a.i * 0.5 + b.i * 0.5);
-			result.j = (a.j * 0.5 + b.j * 0.5);
-			result.k = (a.k * 0.5 + b.k * 0.5);
+			result.r = (a.r * 0.5f + b.r * 0.5f);
+			result.i = (a.i * 0.5f + b.i * 0.5f);
+			result.j = (a.j * 0.5f + b.j * 0.5f);
+			result.k = (a.k * 0.5f + b.k * 0.5f);
 			return result;
 		}
 
-		double ratioA = sin((1 - t)*halfTheta) / sinHalfTheta;
-		double ratioB = sin(t *halfTheta) / sinHalfTheta;
+		float ratioA = (float)sin((1 - t)*halfTheta) / sinHalfTheta;
+		float ratioB = (float)sin(t *halfTheta) / sinHalfTheta;
 
 		//calculate Quaternion
 		result.r = (a.r * ratioA + b.r * ratioB);
@@ -317,7 +317,7 @@ public:
 		Vector3D u = { i, j, k };
 		float s = r;
 
-		//vector = (u * 2.0f * Vector3D::Dot(u, vector)) + (vector * (s*s - Vector3D::Dot(u, vector))) + (Vector3D::Cross(u, vector) * 2.0f * s);
+		vector = (u * 2.0f * Vector3D::Dot(u, vector)) + (vector * (s*s - Vector3D::Dot(u, vector))) + (Vector3D::Cross(u, vector) * 2.0f * s);
 		Quaternion V(0, vector.x, vector.y, vector.z);
 		V = (*this * V * this->Conjugate());
 		vector.x = V.i;

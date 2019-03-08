@@ -91,6 +91,28 @@ struct SkinningData
 		:jointOrder(jointOrder), verticesSkinData(verticesSkinData) {}
 };
 
+struct VertexData
+{
+	Vector3D position;
+	int textureIndex = -1;
+	int normalIndex = -1;
+	VertexData* duplicateVertex;
+	int index;
+	float length;
+	std::vector<Vector3D> tangents;
+	Vector3D averagedTangent;
+
+	VertexSkinData weightsData;
+
+	VertexData(int index, Vector3D position, VertexSkinData weightsData)
+	{
+		this->index = index;
+		this->weightsData = weightsData;
+		this->position = position;
+		this->length = position.Magnitude();
+	}
+};
+
 struct AnimatedModelData
 {
 	SkeletonData joints;

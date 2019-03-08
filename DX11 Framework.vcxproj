@@ -378,6 +378,12 @@
     <ClCompile Include="ColladaLoader.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
+    <ClCompile Include="include\imGUI\imgui.cpp" />
+    <ClCompile Include="include\imGUI\imgui_demo.cpp" />
+    <ClCompile Include="include\imGUI\imgui_draw.cpp" />
+    <ClCompile Include="include\imGUI\imgui_impl_dx11.cpp" />
+    <ClCompile Include="include\imGUI\imgui_impl_win32.cpp" />
+    <ClCompile Include="include\imGUI\imgui_widgets.cpp" />
     <ClCompile Include="Joint.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="GameObject.cpp" />
@@ -507,6 +513,14 @@
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GeometryGenerator.h" />
+    <ClInclude Include="include\imGUI\imconfig.h" />
+    <ClInclude Include="include\imGUI\imgui.h" />
+    <ClInclude Include="include\imGUI\imgui_impl_dx11.h" />
+    <ClInclude Include="include\imGUI\imgui_impl_win32.h" />
+    <ClInclude Include="include\imGUI\imgui_internal.h" />
+    <ClInclude Include="include\imGUI\imstb_rectpack.h" />
+    <ClInclude Include="include\imGUI\imstb_textedit.h" />
+    <ClInclude Include="include\imGUI\imstb_truetype.h" />
     <ClInclude Include="Joint.h" />
     <ClInclude Include="JointTransform.h" />
     <ClInclude Include="KeyFrame.h" />
