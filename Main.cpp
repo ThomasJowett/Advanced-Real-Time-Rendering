@@ -20,6 +20,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	// Main message loop
 	MSG msg = { 0 };
 
+	//Initialise raw input data
+	RAWINPUTDEVICE rid;
+
+	rid.usUsagePage = 0x01;//Mouse
+	rid.usUsage = 0x02;
+	rid.dwFlags = 0;
+	rid.hwndTarget = NULL;
+
+	if (RegisterRawInputDevices(&rid, 1, sizeof(rid)) == FALSE)
+	{
+		DBG_OUTPUT(L"Failed to register raw input devices\n");
+	}
+
 	float deltaTime = 0.0f;
 
 	while (WM_QUIT != msg.message)
@@ -37,8 +50,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			}
 			else if (WM_QUIT == msg.message)
 				break;
-
-			handled = theApp->HandleMouse(msg, deltaTime);
+			else 
+			{
+				handled = theApp->HandleMouse(msg, deltaTime);
+			}
 
 			if (!handled)
 			{

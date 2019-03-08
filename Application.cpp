@@ -52,24 +52,68 @@ bool Application::HandleMouse(MSG msg, float deltaTime)
 {
 	if (ImGui_ImplWin32_WndProcHandler(msg.hwnd, msg.message, msg.wParam, msg.lParam))
 		return true;
-
-	switch (msg.wParam)
+	int x, y;
+	float delta;
+	switch (msg.message)
 	{
+	case WM_MOUSEMOVE:
+		x = LOWORD(msg.lParam);
+		y = HIWORD(msg.lParam);
+		return true;
+	case WM_LBUTTONDOWN:
+		return true;
+	case WM_RBUTTONDOWN:
+		_lastCursorPosX = LOWORD(msg.lParam);
+		_lastCursorPosY = HIWORD(msg.lParam);
+		ShowCursor(FALSE);
+		_rightMouseButtonHeld = true;
+		return true;
+	case WM_RBUTTONUP:
+		ShowCursor(TRUE);
+		GetWindowPosition(x, y);
+		SetCursorPos(_lastCursorPosX + x + 8, _lastCursorPosY + y + 31);
+		_rightMouseButtonHeld = false;
+		return true;
+	case WM_MBUTTONDOWN:
+		return true;
+	case WM_MOUSEWHEEL:
+		delta = GET_WHEEL_DELTA_WPARAM(msg.wParam);
+
+		if (delta > 0)
+		{
+			_cameraSpeed++;
+		}
+		else if (delta < 0)
+		{
+			_cameraSpeed--;
+			if (_cameraSpeed < 1.0f)
+				_cameraSpeed = 1.0f;
+		}
+		return true;
+	case WM_INPUT:
+		UINT dataSize;
+		GetRawInputData(reinterpret_cast<HRAWINPUT>(msg.lParam), RID_INPUT, NULL, &dataSize, sizeof(RAWINPUTHEADER));
+
+		if (dataSize > 0)
+		{
+			std::unique_ptr<BYTE[]> rawData = std::make_unique<BYTE[]>(dataSize);
+			if (GetRawInputData(reinterpret_cast<HRAWINPUT>(msg.lParam), RID_INPUT, rawData.get(), &dataSize, sizeof(RAWINPUTHEADER)) == dataSize)
+			{
+				RAWINPUT* raw = reinterpret_cast<RAWINPUT*>(rawData.get());
+				if (raw->header.dwType == RIM_TYPEMOUSE)
+				{
+					_mouseRawX = raw->data.mouse.lLastX;
+					_mouseRawY = raw->data.mouse.lLastY;
+				}
+			}
+		}
+		if (DefWindowProc(msg.hwnd, msg.message, msg.wParam, msg.lParam) == FALSE)
+			return false;
 		
+		return true;
 	}
 
-	float delta = GET_WHEEL_DELTA_WPARAM(msg.wParam);
-
-	if (delta > 0)
-	{
-		_cameraSpeed++;
-	}
-	else if (delta < 0)
-	{
-		_cameraSpeed--;
-		if (_cameraSpeed < 1.0f)
-			_cameraSpeed = 1.0f;
-	}
+	
 
 	return false;
 }
@@ -128,7 +172,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	ImGuiIO& io = ImGui::GetIO();
 	ImGui_ImplWin32_Init(_hWnd);
 	ImGui_ImplDX11_Init(_pd3dDevice, _pImmediateContext);
-	ImGui::StyleColorsDark();
+	ImGui::StyleColorsLight();
 
 	//Load Textures ------------------------------------------------------------------------------------------------
 	//TODO: make a texture 2d manager that automatically releases all the textures when program closes
@@ -582,11 +626,13 @@ HRESULT Application::InitWindow(HINSTANCE hInstance, int nCmdShow)
     _hInst = hInstance;
     RECT rc = {0, 0, (LONG)_renderWidth, (LONG)_renderHeight};
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-    _hWnd = CreateWindow(L"TutorialWindowClass", L"FGGC Semester 2 Framework", WS_OVERLAPPEDWINDOW,
+    _hWnd = CreateWindow(L"TutorialWindowClass", L"Advanced Real Time Rendering", WS_OVERLAPPEDWINDOW,
                          CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
                          nullptr);
     if (!_hWnd)
 		return E_FAIL;
+
+	
 
     ShowWindow(_hWnd, nCmdShow);
 
@@ -1068,7 +1114,11 @@ void Application::DrawImGui()
 
 	//Createtestwindow
 	ImGui::Begin("Test");
+	ImGui::Text("%i", _lastCursorPosX);
 	ImGui::End();
+
+	_mouseRawX = 0.0f;
+	_mouseRawY = 0.0f;
 
 	ImGui::ShowDemoWindow();
 
@@ -1077,6 +1127,16 @@ void Application::DrawImGui()
 
 	//RenderDrawData
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+}
+
+void Application::GetWindowPosition(int & X, int & Y)
+{
+	RECT rect = { NULL };
+	if (GetWindowRect(_hWnd, &rect))
+	{
+		X = rect.left;
+		Y = rect.top;
+	}
 }
 
 void Application::Update(float deltaTime)
@@ -1183,6 +1243,14 @@ void Application::Update(float deltaTime)
 	if (GetAsyncKeyState('L') & 0x8000)
 		_camera->Yaw(_cameraRotaion*deltaTime);
 
+
+	if (_rightMouseButtonHeld && (_mouseRawX != 0 || _mouseRawY != 0)) 
+	{
+		_camera->Yaw((float)_mouseRawX * _mouseSensitivity);
+		_camera->Pitch((float)_mouseRawY * _mouseSensitivity);
+	}
+
+	
 
 	// Update camera
 	//float angleAroundZ = XMConvertToRadians(_cameraOrbitAngleXZ);

@@ -125,7 +125,14 @@ private:
 	float _cameraOrbitAngleXZ = -90.0f;
 	float _cameraSpeed = 10.0f;
 	float _cameraRotaion = 2.0f;
+	float _mouseSensitivity = 0.01f;
 	bool _walkCamera = true;
+	bool _rightMouseButtonHeld = false;
+	int _mouseRawX;
+	int _mouseRawY;
+
+	int _lastCursorPosX;
+	int _lastCursorPosY;
 
 	UINT _WindowHeight;
 	UINT _WindowWidth;
@@ -165,6 +172,8 @@ private:
 	void DrawSceneToSSAODepthMap();
 
 	void DrawImGui();
+
+	void GetWindowPosition(int&X, int&Y);
 
 	float counter = 0.01f;
 	float heightMapScale = 0.04f;
