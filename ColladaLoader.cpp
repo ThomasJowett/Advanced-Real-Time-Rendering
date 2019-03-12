@@ -294,7 +294,28 @@ SkeletalMeshData ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, std::v
 		int normalIndex = atoi(indexRawData[i * typeCount + 1].c_str());
 		int texCoordIndex = atoi(indexRawData[i * typeCount + 2].c_str());
 
-		//VertexData currentVertex = verts.at
+		VertexData currentVertex = verts.at(positionIndex);
+		if (!currentVertex.IsSet())
+		{
+			currentVertex.textureIndex = texCoordIndex;
+			currentVertex.normalIndex = normalIndex;
+			indices.push_back(positionIndex);
+		}
+		else
+		{
+			//vertex has already been processed
+			if (currentVertex.HasSameTextureAndNormal(texCoordIndex, normalIndex))
+			{
+				indices.push_back(currentVertex.index);
+			}
+			else
+			{
+				VertexData anotherVertex = currentVertex.duplicateVertex;
+				if(anotherVertex != )
+
+					//TODO understand duplicate vertex
+			}
+		}
 	}
 	return SkeletalMeshData();
 }

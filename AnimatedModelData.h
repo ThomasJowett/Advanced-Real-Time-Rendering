@@ -96,7 +96,7 @@ struct VertexData
 	Vector3D position;
 	int textureIndex = -1;
 	int normalIndex = -1;
-	VertexData* duplicateVertex;
+	VertexData duplicateVertex;
 	int index;
 	float length;
 	std::vector<Vector3D> tangents;
@@ -110,6 +110,16 @@ struct VertexData
 		this->weightsData = weightsData;
 		this->position = position;
 		this->length = position.Magnitude();
+	}
+
+	bool IsSet()
+	{
+		return textureIndex != -1 && normalIndex != -1;
+	}
+
+	bool HasSameTextureAndNormal(int textureIndexOther, int normalIndexOther)
+	{
+		return textureIndexOther == textureIndex && normalIndexOther == normalIndex;
 	}
 };
 
