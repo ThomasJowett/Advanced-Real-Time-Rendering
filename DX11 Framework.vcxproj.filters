@@ -165,6 +165,9 @@
     <FxCompile Include="Terrain.fx">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="SkinnedMesh.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Resources\Crate_SPEC.dds">

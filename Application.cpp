@@ -199,7 +199,9 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	ID3D11ShaderResourceView *_pAOGunTextureRV;
 	ID3D11ShaderResourceView *_pEmissiveGunTextureRV;
 
-	ColladaLoader::LoadModel("Resources/model.dae", 3);
+	AnimatedModelData modelData = ColladaLoader::LoadModel("Resources/model.dae", 3);
+
+	Mesh SpaceManGeometry(modelData.ToIndexedModel(), _pd3dDevice);
 
 	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Diffuse.dds", nullptr, &_pDiffuseGroundTextureRV);
 	//CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Floor_Height.dds", nullptr, &_pHeightGroundTextureRV);
@@ -212,7 +214,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\SpaceMan_Normal.dds", nullptr, &_pNormalSpaceManTextureRV);
 
-	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Man.dds", nullptr, &_pDiffuseManTextureRV);
+	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Model.dds", nullptr, &_pDiffuseManTextureRV);
 
 	CreateDDSTextureFromFile(_pd3dDevice, L"Resources\\Man_normal.dds", nullptr, &_pNormalManTextureRV);
 	
@@ -265,7 +267,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	Mesh torusGeometry(GeometryGenerator::CreateTorus(0.7f, 0.25f, 15), _pd3dDevice);
 
-	Mesh SpaceManGeometry(OBJLoader::Load("Resources\\SpaceMan.obj", true), _pd3dDevice);
+	//Mesh SpaceManGeometry(OBJLoader::Load("Resources\\SpaceMan.obj", true), _pd3dDevice);
 
 	Mesh GunGeometry(OBJLoader::Load("Resources\\Gun.obj", true), _pd3dDevice);
 
@@ -282,7 +284,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	tii.HeightMapHeight = 2049;
 	tii.CellSpacing = 0.5f;
 
-	_terrain.Init(_pd3dDevice, _pImmediateContext, tii);
+	//_terrain.Init(_pd3dDevice, _pImmediateContext, tii);
 
 
 	_fullscreenQuad = new Mesh(GeometryGenerator::CreateFullScreenQuad(), _pd3dDevice);
@@ -331,11 +333,11 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	
 	_gameObjects.push_back(gameObject);
 	
-	transform = new Transform(Vector3D(5.0f, _terrain.GetHeight(0.0f, 0.0f) + 1.0f, 0.0f), Vector3D(0, XM_PI, 0), Vector3D(0.02f, 0.02f, 0.02f));
+	transform = new Transform(Vector3D(2.0f, _terrain.GetHeight(0.0f, 0.0f) + 1.0f, 0.0f), Vector3D(-XM_PIDIV2, XM_PI, 0), Vector3D(0.2f, 0.2f, 0.2f));
 	
-	gameObject = new GameObject("SpaceMan", transform, SpaceManGeometry, shinyMaterial);
-	gameObject->SetTextureRV(_pDiffuseSpaceManTextureRV, TX_DIFFUSE);
-	gameObject->SetTextureRV(_pNormalSpaceManTextureRV, TX_NORMAL);
+	gameObject = new GameObject("Cowboy", transform, SpaceManGeometry, noSpecMaterial);
+	gameObject->SetTextureRV(_pDiffuseManTextureRV, TX_DIFFUSE);
+	gameObject->SetTextureRV(_pNormalManTextureRV, TX_NORMAL);
 	
 	_gameObjects.push_back(gameObject);
 	
@@ -1023,7 +1025,7 @@ void Application::DrawSceneToShadowMap()
 	_pImmediateContext->VSSetSamplers(0, 1, &_pSamplerLinear);
 	_pImmediateContext->DSSetSamplers(0, 1, &_pSamplerLinear);
 
-	_terrain.DrawToShadowMap(_pImmediateContext, cb, _camera);
+	//_terrain.DrawToShadowMap(_pImmediateContext, cb, _camera);
 
 	//Render All Other Objects ---------------------------------------------------------
 
@@ -1357,7 +1359,7 @@ void Application::Draw()
 	textureRV = _pShadowMap->GetShaderResourceView();
 	_pImmediateContext->PSSetShaderResources(7, 1, &textureRV);
 
-	_terrain.Draw(_pImmediateContext, basicLight, _camera, _pShadowMap);
+	//_terrain.Draw(_pImmediateContext, basicLight, _camera, _pShadowMap);
 
 	_pImmediateContext->PSSetShaderResources(7, 1, null);
 

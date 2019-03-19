@@ -53,6 +53,9 @@ struct SkeletalVertex
 	XMFLOAT3 PosL;
 	XMFLOAT3 NormL;
 	XMFLOAT3 Tangent;
+	XMFLOAT2 Tex;
+	XMFLOAT3 Weights;
+	BYTE BoneIndices[4];
 };
 
 struct SurfaceInfo

@@ -12,15 +12,18 @@ AnimatedModelData ColladaLoader::LoadModel(const char * filename, int maxWeights
 		pRoot = doc.FirstChildElement("COLLADA");
 
 		tinyxml2::XMLElement* pNode = pRoot->FirstChildElement("library_controllers");
-		SkinningData skinningData = LoadSkin(pNode, maxWeights);
+		if (pNode)
+		{
+			SkinningData skinningData = LoadSkin(pNode, maxWeights);
 
-		pNode = pRoot->FirstChildElement("library_visual_scenes");
-		SkeletonData skeletonData = LoadSkeleton(pNode, skinningData.jointOrder);
+			pNode = pRoot->FirstChildElement("library_visual_scenes");
+			SkeletonData skeletonData = LoadSkeleton(pNode, skinningData.jointOrder);
 
-		pNode = pRoot->FirstChildElement("library_geometries");
-		SkeletalMeshData meshData = LoadGeometry(pNode, skinningData.verticesSkinData);
+			pNode = pRoot->FirstChildElement("library_geometries");
+			SkeletalMeshData meshData = LoadGeometry(pNode, skinningData.verticesSkinData);
 
-		return AnimatedModelData(skeletonData, meshData);
+			return AnimatedModelData(skeletonData, meshData);
+		}
 	}
 
 	return AnimatedModelData();
@@ -172,7 +175,6 @@ SkeletalMeshData ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, std::v
 	std::vector<float> verticesArray;
 	std::vector<float> normalsArray;
 	std::vector<float> texturesArray;
-	std::vector<int> indicesArray;
 	std::vector<int> jointIdsArray;
 	std::vector<float> weightsArray;
 
@@ -195,6 +197,11 @@ SkeletalMeshData ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, std::v
 	std::string texCoordsId;
 
 	tinyxml2::XMLElement * pPolyNode = pMeshNode->FirstChildElement("polylist");
+
+	if (!pPolyNode)
+	{
+		pPolyNode = pMeshNode->FirstChildElement("triangles");
+	}
 
 	tinyxml2::XMLElement * pInputNode = pPolyNode->FirstChildElement("input");
 
@@ -240,7 +247,7 @@ SkeletalMeshData ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, std::v
 
 				Quaternion rotation = Quaternion(-XM_PIDIV2, 0, 0);
 
-				rotation.RotateVectorByQuaternion(position);
+				//rotation.RotateVectorByQuaternion(position);
 				verts.push_back(VertexData(verts.size(), position, vertexSkinData[verts.size()]));
 			}
 		}
@@ -260,7 +267,7 @@ SkeletalMeshData ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, std::v
 				float z = atof(normalRawData[i * 3 + 2].c_str());
 				Vector3D normal = { x,y,z };
 				Quaternion rotation = Quaternion(-XM_PIDIV2, 0, 0);
-				rotation.RotateVectorByQuaternion(normal);
+				//rotation.RotateVectorByQuaternion(normal);
 				normals.push_back(XMFLOAT3(normal.x, normal.y, normal.z));
 			}
 		}
@@ -294,28 +301,98 @@ SkeletalMeshData ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, std::v
 		int normalIndex = atoi(indexRawData[i * typeCount + 1].c_str());
 		int texCoordIndex = atoi(indexRawData[i * typeCount + 2].c_str());
 
-		VertexData currentVertex = verts.at(positionIndex);
-		if (!currentVertex.IsSet())
+		VertexData* currentVertex = &verts.at(positionIndex);
+		if (!currentVertex->IsSet())
 		{
-			currentVertex.textureIndex = texCoordIndex;
-			currentVertex.normalIndex = normalIndex;
+			currentVertex->textureIndex = texCoordIndex;
+			currentVertex->normalIndex = normalIndex;
 			indices.push_back(positionIndex);
 		}
 		else
 		{
-			//vertex has already been processed
-			if (currentVertex.HasSameTextureAndNormal(texCoordIndex, normalIndex))
-			{
-				indices.push_back(currentVertex.index);
-			}
-			else
-			{
-				VertexData anotherVertex = currentVertex.duplicateVertex;
-				if(anotherVertex != )
-
-					//TODO understand duplicate vertex
-			}
+			DealWithAlreadyProcessedVertex(currentVertex, texCoordIndex, normalIndex, indices, verts);
 		}
 	}
-	return SkeletalMeshData();
+
+	//Remove unused vertices -------------------------------------------------------------------------------------------------------
+	for (VertexData vertex : verts)
+	{
+		vertex.AverageTangents();
+
+		if (!vertex.IsSet())
+		{
+			vertex.textureIndex = 0;
+			vertex.normalIndex = 0;
+		}
+	}
+
+	//initialise the arrays -------------------------------------------------------------------------------------------------------
+	verticesArray.resize(verts.size() * 3);
+	texturesArray.resize(verts.size() * 2);
+	normalsArray.resize(verts.size() * 3);
+	jointIdsArray.resize(verts.size() * 3);
+	weightsArray.resize(verts.size() * 3);
+
+	float furthestPoint = 0.0f;
+	for (int i = 0; i < verts.size(); i++)
+	{
+		VertexData currentVertex = verts.at(i);
+		if (currentVertex.length > furthestPoint)
+		{
+			furthestPoint = currentVertex.length;
+		}
+
+		if (i == 97)
+		{
+			float temp = 3 + 4;
+		}
+
+		Vector3D position = currentVertex.position;
+		XMFLOAT2 textureCoord = TexCoords.at(currentVertex.textureIndex);
+		XMFLOAT3 normalVector = normals.at(currentVertex.normalIndex);
+		verticesArray[i * 3] = position.x;
+		verticesArray[i * 3 + 1] = position.y;
+		verticesArray[i * 3 + 2] = position.z;
+		texturesArray[i * 2] = textureCoord.x;
+		texturesArray[i * 2 + 1] = 1 - textureCoord.y;
+		normalsArray[i * 3] = normalVector.x;
+		normalsArray[i * 3 + 1] = normalVector.y;
+		normalsArray[i * 3 + 2] = normalVector.z;
+		VertexSkinData weights = currentVertex.weightsData;
+		weights.SetNumberOfEffects(3);//set to three here as that is the maximum number of weights
+		jointIdsArray[i * 3] = weights.jointIds.at(0);
+		jointIdsArray[i * 3 + 1] = weights.jointIds.at(1);
+		jointIdsArray[i * 3 + 2] = weights.jointIds.at(2);
+		weightsArray[i * 3] = weights.weights.at(0);
+		weightsArray[i * 3 + 1] = weights.weights.at(1);
+		weightsArray[i * 3 + 2] = weights.weights.at(2);
+	}
+
+	return SkeletalMeshData(verticesArray, texturesArray, normalsArray, indices, jointIdsArray, weightsArray);
+}
+
+void ColladaLoader::DealWithAlreadyProcessedVertex(VertexData *previousVertex, int newTextureIndex, int newNormalIndex, std::vector<int> &indices, std::vector<VertexData> &verts)
+{
+	//vertex has already been processed
+	if (previousVertex->HasSameTextureAndNormal(newTextureIndex, newNormalIndex))
+	{
+		indices.push_back(previousVertex->index);
+	}
+	else
+	{
+		VertexData* anotherVertex = previousVertex->GetDuplicateVertex();
+		if (anotherVertex != nullptr)
+		{
+			return DealWithAlreadyProcessedVertex(anotherVertex, newTextureIndex, newNormalIndex, indices, verts);
+		}
+		else
+		{
+			VertexData* duplicateVertex = new VertexData(verts.size(), previousVertex->position, previousVertex->weightsData);
+			duplicateVertex->textureIndex = newTextureIndex;
+			duplicateVertex->normalIndex = newNormalIndex;
+			previousVertex->duplicateVertex = duplicateVertex;
+			verts.push_back(*duplicateVertex);
+			indices.push_back(duplicateVertex->index);
+		}
+	}
 }
