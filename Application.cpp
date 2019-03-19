@@ -286,6 +286,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	//_terrain.Init(_pd3dDevice, _pImmediateContext, tii);
 
+	//_character = 
 
 	_fullscreenQuad = new Mesh(GeometryGenerator::CreateFullScreenQuad(), _pd3dDevice);
 
@@ -577,8 +578,26 @@ HRESULT Application::InitShadersAndInputLayout()
 	hr = _pd3dDevice->CreateInputLayout(layoutTerrain, numElements, pVSBlob->GetBufferPointer(),
 		pVSBlob->GetBufferSize(), &_pTerrainLayout);
 
+	hr = CompileShaderFromFile(L"SkinnedMesh.fx", "SkinnedVS", "vs_5_0", &pVSBlob);
+	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pSkinnedVertexShader);
+
+	D3D11_INPUT_ELEMENT_DESC layoutSkinned[] = 
+	{
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{ "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD0", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+
+	// Create the input layout
+	hr = _pd3dDevice->CreateInputLayout(layoutSkinned, numElements, pVSBlob->GetBufferPointer(),
+		pVSBlob->GetBufferSize(), &_pSkinnedLayout);
+
 	pVSBlob->Release();
 	pPSBlob->Release();
+	pHSBlob->Release();
+	pDSBlob->Release();
 
     // Set the input layout
     _pImmediateContext->IASetInputLayout(_pVertexLayout);
@@ -1362,6 +1381,9 @@ void Application::Draw()
 	//_terrain.Draw(_pImmediateContext, basicLight, _camera, _pShadowMap);
 
 	_pImmediateContext->PSSetShaderResources(7, 1, null);
+
+	//TODO: render animatedModel here
+	_character.Draw();
 
 	//Render all other objects
 

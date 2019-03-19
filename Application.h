@@ -10,6 +10,7 @@
 #include "Camera.h"
 #include "Commons.h"
 #include "Terrain.h"
+#include "AnimatedModel.h"
 
 #include <vector>
 /*
@@ -62,6 +63,7 @@ private:
 	ID3D11PixelShader*      _pSSAONormalDepthPixelShader;
 	ID3D11VertexShader*     _pSSAOBlurVertexShader;
 	ID3D11PixelShader*      _pSSAOBlurPixelShader;
+	ID3D11VertexShader*		_pSkinnedVertexShader;
 
 	ID3D11HullShader*		_pHullShader = nullptr;
 	ID3D11DomainShader*		_pDomainShader = nullptr;
@@ -83,6 +85,7 @@ private:
 	ID3D11InputLayout*      _pPostProcessLayout;
 	ID3D11InputLayout*		_pSSOALayout;
 	ID3D11InputLayout*		_pTerrainLayout;
+	ID3D11InputLayout*		_pSkinnedLayout;
 
 	Mesh*					_fullscreenQuad;
 
@@ -115,6 +118,8 @@ private:
 	SSAO* _pSSAO;
 
 	Terrain _terrain;
+
+	AnimatedModel _character;
 
 	vector<GameObject *> _gameObjects;
 

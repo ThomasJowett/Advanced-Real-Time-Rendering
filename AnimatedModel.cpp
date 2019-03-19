@@ -38,6 +38,11 @@ XMMATRIX AnimatedModel::GetJointTransforms()
 	return XMMATRIX();
 }
 
+void AnimatedModel::Draw(ID3D11DeviceContext * pImmediateContext)
+{
+
+}
+
 void AnimatedModel::IncreaseAnimationTime(float deltaTime)
 {
 	_animationTime += deltaTime;

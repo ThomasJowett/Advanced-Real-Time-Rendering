@@ -30,6 +30,8 @@ public:
 
 	XMMATRIX GetJointTransforms();
 
+	void Draw(ID3D11DeviceContext* pImmediateContext);
+
 private:
 
 	void IncreaseAnimationTime(float deltaTime);

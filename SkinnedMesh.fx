@@ -30,8 +30,12 @@ struct VS_INPUT
 
 struct VS_OUTPUT
 {
-    float4 PosH : SV_POSITION;
-    float2 Tex : TEXCOORD;
+	float4 PosH : SV_POSITION;
+	float3 NormW : NORMAL;
+	float4 TangentW : TANGENT;
+	float3 PosW : POSITION;
+	float2 Tex : TEXCOORD0;
+	float4 ShadowPosH : TEXCOORD1;
 };
 
 VS_OUTPUT SkinnedVS(VS_INPUT input)
@@ -56,9 +60,6 @@ VS_OUTPUT SkinnedVS(VS_INPUT input)
     output.PosH = mul(float4(Pos.xyz, 1.0f), ViewProjection);
 
     output.Tex = input.Tex0;
-}
 
-float4 SkinnedPS(VS_OUTPUT input)
-{
-
+	return output;
 }

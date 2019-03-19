@@ -22,3 +22,11 @@ public:
 	Mesh(IndexedModel model, ID3D11Device* d3dDevice);
 	~Mesh();
 };
+
+class SkeletalMesh
+{
+public:
+	ID3D11Buffer * _vertexBuffer;
+	ID3D11Buffer * _indexBuffer;
+	int _numberOfIndices;
+};

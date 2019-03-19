@@ -29,7 +29,8 @@ enum Shader
 	FX_DISPLACEMENT,
 	FX_GEOMETRY,
 	FX_TERRAIN,
-	FX_SKY
+	FX_SKY,
+	FX_SKELETAL
 };
 
 struct Material
