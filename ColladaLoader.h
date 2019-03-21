@@ -17,7 +17,11 @@ namespace ColladaLoader
 
 	JointData* LoadJointData(tinyxml2::XMLElement * node, bool isRoot, std::vector<std::string> jointOrder);
 
-	SkeletalMeshData LoadGeometry(tinyxml2::XMLElement* node, std::vector<VertexSkinData> vertexSkinData);
+	IndexedSkeletalModel LoadGeometry(tinyxml2::XMLElement* node, std::vector<VertexSkinData> vertexSkinData);
 
 	void DealWithAlreadyProcessedVertex(VertexData* previousVertex, int newTextureIndex, int newNormalIndex, std::vector<int> &indices, std::vector<VertexData> &verts);
+
+	void InsertTangentsIntoArray(SkeletalVertex* vertices, unsigned short* indices, int vertexCount);
+
+	XMFLOAT3 CalculateTangent(SkeletalVertex v0, SkeletalVertex v1, SkeletalVertex v2);
 }

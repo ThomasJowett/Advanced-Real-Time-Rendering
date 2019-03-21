@@ -20,13 +20,36 @@ AnimatedModelData ColladaLoader::LoadModel(const char * filename, int maxWeights
 			SkeletonData skeletonData = LoadSkeleton(pNode, skinningData.jointOrder);
 
 			pNode = pRoot->FirstChildElement("library_geometries");
-			SkeletalMeshData meshData = LoadGeometry(pNode, skinningData.verticesSkinData);
+			IndexedSkeletalModel meshData = LoadGeometry(pNode, skinningData.verticesSkinData);
 
 			return AnimatedModelData(skeletonData, meshData);
 		}
 	}
 
 	return AnimatedModelData();
+}
+
+AnimationData ColladaLoader::LoadAnimation(const char * filename)
+{
+	AnimationData returnAnimationData;
+
+	tinyxml2::XMLDocument doc;
+
+	if (doc.LoadFile(filename) == 0)
+	{
+		tinyxml2::XMLElement* pRoot;
+
+		pRoot = doc.FirstChildElement("COLLADA");
+
+		tinyxml2::XMLElement* pNode = pRoot->FirstChildElement("library_animations");
+
+		if (pNode)
+		{
+			//TODO: load animation data
+		}
+	}
+
+	return returnAnimationData;
 }
 
 SkinningData ColladaLoader::LoadSkin(tinyxml2::XMLElement * node, int maxWeights)
@@ -131,9 +154,9 @@ SkeletonData ColladaLoader::LoadSkeleton(tinyxml2::XMLElement * node, std::vecto
 	}
 	tinyxml2::XMLElement * pHeadNode = pArmatureNode->FirstChildElement("node");
 
-	JointData* headJoint = LoadJointData(pHeadNode, true, jointOrder);
+	JointData* rootJoint = LoadJointData(pHeadNode, true, jointOrder);
 
-	return SkeletonData(jointOrder.size(), *headJoint);
+	return SkeletonData(jointOrder.size(), *rootJoint);
 }
 
 JointData* ColladaLoader::LoadJointData(tinyxml2::XMLElement * node, bool isRoot, std::vector<std::string> jointOrder)
@@ -170,7 +193,7 @@ JointData* ColladaLoader::LoadJointData(tinyxml2::XMLElement * node, bool isRoot
 	return joint;
 }
 
-SkeletalMeshData ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, std::vector<VertexSkinData> vertexSkinData)
+IndexedSkeletalModel ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, std::vector<VertexSkinData> vertexSkinData)
 {
 	std::vector<float> verticesArray;
 	std::vector<float> normalsArray;
@@ -328,47 +351,83 @@ SkeletalMeshData ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, std::v
 
 	//initialise the arrays -------------------------------------------------------------------------------------------------------
 	verticesArray.resize(verts.size() * 3);
-	texturesArray.resize(verts.size() * 2);
+	texturesArray.resize(verts.size() * 3);
 	normalsArray.resize(verts.size() * 3);
 	jointIdsArray.resize(verts.size() * 3);
 	weightsArray.resize(verts.size() * 3);
 
-	float furthestPoint = 0.0f;
+	
+
+	SkeletalVertex* finalVerts = new SkeletalVertex[verts.size()];
+
 	for (int i = 0; i < verts.size(); i++)
 	{
 		VertexData currentVertex = verts.at(i);
-		if (currentVertex.length > furthestPoint)
-		{
-			furthestPoint = currentVertex.length;
-		}
 
-		if (i == 97)
-		{
-			float temp = 3 + 4;
-		}
+		finalVerts[i].PosL.x = verts.at(i).position.x;
+		finalVerts[i].PosL.y = verts.at(i).position.y;
+		finalVerts[i].PosL.z = verts.at(i).position.z;
 
-		Vector3D position = currentVertex.position;
+		finalVerts[i].NormL = normals.at(currentVertex.normalIndex);
+
 		XMFLOAT2 textureCoord = TexCoords.at(currentVertex.textureIndex);
-		XMFLOAT3 normalVector = normals.at(currentVertex.normalIndex);
-		verticesArray[i * 3] = position.x;
-		verticesArray[i * 3 + 1] = position.y;
-		verticesArray[i * 3 + 2] = position.z;
-		texturesArray[i * 2] = textureCoord.x;
-		texturesArray[i * 2 + 1] = 1 - textureCoord.y;
-		normalsArray[i * 3] = normalVector.x;
-		normalsArray[i * 3 + 1] = normalVector.y;
-		normalsArray[i * 3 + 2] = normalVector.z;
-		VertexSkinData weights = currentVertex.weightsData;
-		weights.SetNumberOfEffects(3);//set to three here as that is the maximum number of weights
-		jointIdsArray[i * 3] = weights.jointIds.at(0);
-		jointIdsArray[i * 3 + 1] = weights.jointIds.at(1);
-		jointIdsArray[i * 3 + 2] = weights.jointIds.at(2);
-		weightsArray[i * 3] = weights.weights.at(0);
-		weightsArray[i * 3 + 1] = weights.weights.at(1);
-		weightsArray[i * 3 + 2] = weights.weights.at(2);
+		finalVerts[i].Tex.x = textureCoord.x;
+		finalVerts[i].Tex.y = 1 - textureCoord.y;
+
+		finalVerts[i].Weights = currentVertex.weightsData.GetWeights();
+
+		finalVerts[i].BoneIndices = currentVertex.weightsData.GetBoneIndices();
 	}
 
-	return SkeletalMeshData(verticesArray, texturesArray, normalsArray, indices, jointIdsArray, weightsArray);
+	
+
+	unsigned short* indicesArray = new unsigned short[indices.size()];
+	unsigned int numMeshIndices = indices.size();
+	for (unsigned int i = 0; i < numMeshIndices; ++i)
+	{
+		indicesArray[i] = indices[i];
+	}
+	
+	InsertTangentsIntoArray(finalVerts, indicesArray, verts.size());
+
+	IndexedSkeletalModel indexedSkeletalModel;
+
+	indexedSkeletalModel.Vertices.assign(&finalVerts[0], &finalVerts[verts.size()]);
+	indexedSkeletalModel.Indices.assign(&indicesArray[0], &indicesArray[numMeshIndices]);
+
+	return indexedSkeletalModel;
+
+	//float furthestPoint = 0.0f;
+	//for (int i = 0; i < verts.size(); i++)
+	//{
+	//	VertexData currentVertex = verts.at(i);
+	//	if (currentVertex.length > furthestPoint)
+	//	{
+	//		furthestPoint = currentVertex.length;
+	//	}
+	//
+	//	Vector3D position = currentVertex.position;
+	//	XMFLOAT2 textureCoord = TexCoords.at(currentVertex.textureIndex);
+	//	XMFLOAT3 normalVector = normals.at(currentVertex.normalIndex);
+	//	verticesArray[i * 3] = position.x;
+	//	verticesArray[i * 3 + 1] = position.y;
+	//	verticesArray[i * 3 + 2] = position.z;
+	//	texturesArray[i * 2] = textureCoord.x;
+	//	texturesArray[i * 2 + 1] = 1 - textureCoord.y;
+	//	normalsArray[i * 3] = normalVector.x;
+	//	normalsArray[i * 3 + 1] = normalVector.y;
+	//	normalsArray[i * 3 + 2] = normalVector.z;
+	//	VertexSkinData weights = currentVertex.weightsData;
+	//	weights.SetNumberOfEffects(3);//set to three here as that is the maximum number of weights
+	//	jointIdsArray[i * 3] = weights.jointIds.at(0);
+	//	jointIdsArray[i * 3 + 1] = weights.jointIds.at(1);
+	//	jointIdsArray[i * 3 + 2] = weights.jointIds.at(2);
+	//	weightsArray[i * 3] = weights.weights.at(0);
+	//	weightsArray[i * 3 + 1] = weights.weights.at(1);
+	//	weightsArray[i * 3 + 2] = weights.weights.at(2);
+	//}
+	//
+	//return SkeletalMeshData(verticesArray, texturesArray, normalsArray, indices, jointIdsArray, weightsArray);
 }
 
 void ColladaLoader::DealWithAlreadyProcessedVertex(VertexData *previousVertex, int newTextureIndex, int newNormalIndex, std::vector<int> &indices, std::vector<VertexData> &verts)
@@ -395,4 +454,143 @@ void ColladaLoader::DealWithAlreadyProcessedVertex(VertexData *previousVertex, i
 			indices.push_back(duplicateVertex->index);
 		}
 	}
+}
+
+void ColladaLoader::InsertTangentsIntoArray(SkeletalVertex * vertices, unsigned short* indices, int vertexCount)
+{
+	int faceCount, i, index;
+	SkeletalVertex vertex1, vertex2, vertex3;
+	XMFLOAT3 tangent;
+
+
+	// Calculate the number of faces in the model.
+	faceCount = vertexCount / 3;
+
+	// Initialize the index to the model data.
+	index = 0;
+
+	// Go through all the faces and calculate the the tangent, binormal, and normal vectors.
+	for (i = 0; i < faceCount; i++)
+	{
+		// Get the three vertices for this face from the model.
+		vertex1.PosL.x = vertices[indices[index]].PosL.x;
+		vertex1.PosL.y = vertices[indices[index]].PosL.y;
+		vertex1.PosL.z = vertices[indices[index]].PosL.z;
+		vertex1.Tex.x = vertices[indices[index]].Tex.x;
+		vertex1.Tex.y = vertices[indices[index]].Tex.y;
+		vertex1.NormL.x = vertices[indices[index]].NormL.x;
+		vertex1.NormL.y = vertices[indices[index]].NormL.y;
+		vertex1.NormL.z = vertices[indices[index]].NormL.z;
+		index++;
+
+		vertex2.PosL.x = vertices[indices[index]].PosL.x;
+		vertex2.PosL.y = vertices[indices[index]].PosL.y;
+		vertex2.PosL.z = vertices[indices[index]].PosL.z;
+		vertex2.Tex.x = vertices[indices[index]].Tex.x;
+		vertex2.Tex.y = vertices[indices[index]].Tex.y;
+		vertex2.NormL.x = vertices[indices[index]].NormL.x;
+		vertex2.NormL.y = vertices[indices[index]].NormL.y;
+		vertex2.NormL.z = vertices[indices[index]].NormL.z;
+		index++;
+
+		vertex3.PosL.x = vertices[indices[index]].PosL.x;
+		vertex3.PosL.y = vertices[indices[index]].PosL.y;
+		vertex3.PosL.z = vertices[indices[index]].PosL.z;
+		vertex3.Tex.x = vertices[indices[index]].Tex.x;
+		vertex3.Tex.y = vertices[indices[index]].Tex.y;
+		vertex3.NormL.x = vertices[indices[index]].NormL.x;
+		vertex3.NormL.y = vertices[indices[index]].NormL.y;
+		vertex3.NormL.z = vertices[indices[index]].NormL.z;
+		index++;
+
+		tangent = CalculateTangent(vertex1, vertex2, vertex3);
+
+		// Store the tangent for this face back in the model structure.
+
+		vertices[indices[index - 1]].Tangent.x = tangent.x;
+		vertices[indices[index - 1]].Tangent.y = tangent.y;
+		vertices[indices[index - 1]].Tangent.z = tangent.z;
+								   
+		vertices[indices[index - 2]].Tangent.x = tangent.x;
+		vertices[indices[index - 2]].Tangent.y = tangent.y;
+		vertices[indices[index - 2]].Tangent.z = tangent.z;
+								   
+		vertices[indices[index - 3]].Tangent.x = tangent.x;
+		vertices[indices[index - 3]].Tangent.y = tangent.y;
+		vertices[indices[index - 3]].Tangent.z = tangent.z;
+	}
+}
+
+XMFLOAT3 ColladaLoader::CalculateTangent(SkeletalVertex v0, SkeletalVertex v1, SkeletalVertex v2)
+{
+	XMVECTOR vv0 = XMLoadFloat3(&v0.PosL);
+	XMVECTOR vv1 = XMLoadFloat3(&v1.PosL);
+	XMVECTOR vv2 = XMLoadFloat3(&v2.PosL);
+
+	XMVECTOR e0 = vv1 - vv0;
+	XMVECTOR e1 = vv2 - vv0;
+
+	//using Eric Lengyel's approach with a few modifications
+	//from Mathematics for 3D Game Programmming and Computer Graphics
+	// want to be able to trasform a vector in Object Space to Tangent Space
+	// such that the x-axis cooresponds to the 's' direction and the
+	// y-axis corresponds to the 't' direction, and the z-axis corresponds
+	// to <0,0,1>, straight up out of the texture map
+
+	//let P = v1 - v0
+	XMVECTOR P = vv1 - vv0;
+	//let Q = v2 - v0
+	XMVECTOR Q = vv2 - vv0;
+	float s1 = v1.Tex.x - v0.Tex.x;
+	float t1 = v1.Tex.y - v0.Tex.y;
+	float s2 = v2.Tex.x - v0.Tex.x;
+	float t2 = v2.Tex.y - v0.Tex.y;
+
+
+	//we need to solve the equation
+	// P = s1*T + t1*B
+	// Q = s2*T + t2*B
+	// for T and B
+
+
+	//this is a linear system with six unknowns and six equatinos, for TxTyTz BxByBz
+	//[px,py,pz] = [s1,t1] * [Tx,Ty,Tz]
+	// qx,qy,qz     s2,t2     Bx,By,Bz
+
+	//multiplying both sides by the inverse of the s,t matrix gives
+	//[Tx,Ty,Tz] = 1/(s1t2-s2t1) *  [t2,-t1] * [px,py,pz]
+	// Bx,By,Bz                      -s2,s1	    qx,qy,qz  
+
+	//solve this for the unormalized T and B to get from tangent to object space
+
+	float tmp = 0.0f;
+	if (fabsf(s1*t2 - s2 * t1) <= 0.0001f)
+	{
+		tmp = 1.0f;
+	}
+	else
+	{
+		tmp = 1.0f / (s1*t2 - s2 * t1);
+	}
+
+	XMFLOAT3 PF3, QF3;
+	XMStoreFloat3(&PF3, P);
+	XMStoreFloat3(&QF3, Q);
+
+	XMFLOAT3 tangent;
+	tangent.x = (t2*PF3.x - t1 * QF3.x);
+	tangent.y = (t2*PF3.y - t1 * QF3.y);
+	tangent.z = (t2*PF3.z - t1 * QF3.z);
+
+	tangent.x = tangent.x*tmp;
+	tangent.y = tangent.y*tmp;
+	tangent.z = tangent.z*tmp;
+
+	XMVECTOR vt = XMLoadFloat3(&tangent);
+
+	vt = XMVector3Normalize(vt);
+
+	XMStoreFloat3(&tangent, vt);
+
+	return tangent;
 }

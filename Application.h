@@ -91,6 +91,7 @@ private:
 
 	ID3D11Buffer*           _pConstantBuffer;
 	ID3D11Buffer*			_pTessConstantBuffer;
+	ID3D11Buffer*			_pSkinnedConstantBuffer;
 
 	ID3D11DepthStencilView*		_depthStencilView = nullptr;
 	ID3D11Texture2D*			_depthStencilBuffer = nullptr;
@@ -119,7 +120,7 @@ private:
 
 	Terrain _terrain;
 
-	AnimatedModel _character;
+	AnimatedModel* _character;
 
 	vector<GameObject *> _gameObjects;
 

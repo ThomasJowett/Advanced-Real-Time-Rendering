@@ -133,6 +133,7 @@ Application::Application()
 	_pNormalPixelShader = nullptr;
 	_pVertexLayout = nullptr;
 	_pTerrainLayout = nullptr;
+	_pSkinnedLayout = nullptr;
 	_pConstantBuffer = nullptr;
 	_pTessConstantBuffer = nullptr;
 
@@ -200,6 +201,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	ID3D11ShaderResourceView *_pEmissiveGunTextureRV;
 
 	AnimatedModelData modelData = ColladaLoader::LoadModel("Resources/model.dae", 3);
+
+	AnimationData animationData = ColladaLoader::LoadAnimation("Resources/model.dae");
 
 	Mesh SpaceManGeometry(modelData.ToIndexedModel(), _pd3dDevice);
 
@@ -286,7 +289,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	//_terrain.Init(_pd3dDevice, _pImmediateContext, tii);
 
-	//_character = 
+	_character = new AnimatedModel(modelData, _pDiffuseManTextureRV, _pd3dDevice);
 
 	_fullscreenQuad = new Mesh(GeometryGenerator::CreateFullScreenQuad(), _pd3dDevice);
 
@@ -587,7 +590,8 @@ HRESULT Application::InitShadersAndInputLayout()
 		{ "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD0", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		{ "TEXCOORD0", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 60, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 
 	// Create the input layout
@@ -792,6 +796,13 @@ HRESULT Application::InitDevice()
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = 0;
 	hr = _pd3dDevice->CreateBuffer(&bd, nullptr, &_pTessConstantBuffer);
+
+	ZeroMemory(&bd, sizeof(bd));
+	bd.Usage = D3D11_USAGE_DEFAULT;
+	bd.ByteWidth = sizeof(SkinnedConstantBuffer);
+	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bd.CPUAccessFlags = 0;
+	hr = _pd3dDevice->CreateBuffer(&bd, nullptr, &_pSkinnedConstantBuffer);
 
     if (FAILED(hr))
         return hr;
@@ -1289,6 +1300,7 @@ void Application::Update(float deltaTime)
 		_camera->SetPosition(Vector3D(_camera->GetPosition().x, _terrain.GetHeight(_camera->GetPosition().x, _camera->GetPosition().z) + 2.0f, _camera->GetPosition().z));
 	_camera->Update();
 
+	_character->Update(deltaTime);
 
 	// Update objects
 	for (auto gameObject : _gameObjects)
@@ -1382,8 +1394,67 @@ void Application::Draw()
 
 	_pImmediateContext->PSSetShaderResources(7, 1, null);
 
-	//TODO: render animatedModel here
-	_character.Draw();
+	//render animated Model
+
+	_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	_pImmediateContext->IASetInputLayout(_pSkinnedLayout);
+	_pImmediateContext->VSSetShader(_pSkinnedVertexShader, nullptr, 0);
+	_pImmediateContext->PSSetShader(_pNormalPixelShader, nullptr, 0);
+	_pImmediateContext->HSSetShader(nullptr, nullptr, 0);
+	_pImmediateContext->DSSetShader(nullptr, nullptr, 0);
+
+	_pImmediateContext->PSSetSamplers(0, 1, &_pSamplerLinear);
+	_pImmediateContext->PSSetSamplers(1, 1, &_pSamplerShadow);
+
+	XMFLOAT4X4 viewAsFloats = _camera->GetView();
+	XMFLOAT4X4 projectionAsFloats = _camera->GetProjection();
+
+	XMMATRIX view = XMLoadFloat4x4(&viewAsFloats);
+	XMMATRIX projection = XMLoadFloat4x4(&projectionAsFloats);
+	XMMATRIX shadowTransform = XMLoadFloat4x4(&_pShadowMap->GetTransform());
+
+	SkinnedConstantBuffer skinCb;
+	ConstantBuffer cb;
+
+	XMMATRIX* boneMatrices = reinterpret_cast<XMMATRIX*>(skinCb.WorldMatrixArray);
+
+	boneMatrices = _character->GetJointTransforms();
+
+	skinCb.ViewProjection = XMMatrixTranspose(XMMatrixMultiply(view, projection));
+	skinCb.ShadowTransform = XMMatrixTranspose(shadowTransform);
+	cb.HasTexture = 1.0f;
+
+	Material material = _character->GetMaterial();
+
+	// Copy material to shader
+	cb.surface.AmbientMtrl = material.ambient;
+	cb.surface.DiffuseMtrl = material.diffuse;
+	cb.surface.SpecularMtrl = material.specular;
+
+	cb.View = XMMatrixTranspose(view);
+	cb.Projection = XMMatrixTranspose(projection);
+	cb.ShadowTransform = XMMatrixTranspose(shadowTransform);
+
+	cb.light = basicLight;
+	cb.EyePosW = _camera->GetPosition();
+
+	//cb.HeightMapScale = 0.01f;
+	cb.MaxSamples = 1000;
+	cb.MinSamples = 1;
+
+	_pImmediateContext->VSSetConstantBuffers(1, 1, &_pSkinnedConstantBuffer);
+	_pImmediateContext->PSSetConstantBuffers(0, 1, &_pConstantBuffer);
+
+	_pImmediateContext->UpdateSubresource(_pSkinnedConstantBuffer, 0, nullptr, &skinCb, 0, 0);
+	_pImmediateContext->UpdateSubresource(_pConstantBuffer, 0, nullptr, &cb, 0, 0);
+
+	textureRV = _character->GetTextureRV();
+	_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
+	textureRV = _pNormalStoneTextureRV;
+	_pImmediateContext->PSSetShaderResources(1, 1, &textureRV);
+
+	_character->Draw(_pImmediateContext);
 
 	//Render all other objects
 
@@ -1400,27 +1471,6 @@ void Application::Draw()
 	_pImmediateContext->PSSetSamplers(1, 1, &_pSamplerShadow);
 	_pImmediateContext->DSSetSamplers(0, 1, &_pSamplerLinear);
 
-    ConstantBuffer cb;
-
-	XMFLOAT4X4 viewAsFloats = _camera->GetView();
-	XMFLOAT4X4 projectionAsFloats = _camera->GetProjection();
-
-	XMMATRIX view = XMLoadFloat4x4(&viewAsFloats);
-	XMMATRIX projection = XMLoadFloat4x4(&projectionAsFloats);
-	XMMATRIX shadowTransform = XMLoadFloat4x4(&_pShadowMap->GetTransform());
-
-	cb.View = XMMatrixTranspose(view);
-	cb.Projection = XMMatrixTranspose(projection);
-	cb.ShadowTransform = XMMatrixTranspose(shadowTransform);
-
-	cb.light = basicLight;
-	cb.EyePosW = _camera->GetPosition();
-
-	//cb.HeightMapScale = 0.01f;
-	cb.MaxSamples = 1000;
-	cb.MinSamples = 1;
-
-	
 
 	textureRV = _pShadowMap->GetShaderResourceView();
 	_pImmediateContext->PSSetShaderResources(3, 1, &textureRV);
@@ -1429,7 +1479,7 @@ void Application::Draw()
 	for (auto gameObject : _gameObjects)
 	{
 		// Get render material
-		Material material = gameObject->GetMaterial();
+		material = gameObject->GetMaterial();
 
 		// Copy material to shader
 		cb.surface.AmbientMtrl = material.ambient;

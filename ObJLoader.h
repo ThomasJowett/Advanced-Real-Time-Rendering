@@ -23,7 +23,7 @@ namespace OBJLoader
 		std::vector<XMFLOAT3>& outNormals);
 
 	//Creates the tangents from the normals and texture coordinates
-	void InsertTangentsIntoArray(SimpleVertex* vertices, int vertexCount);
+	void InsertTangentsIntoArray(SimpleVertex* vertices, unsigned short* indices, int vertexCount);
 
 	XMFLOAT3 CalculateTangent(SimpleVertex v0, SimpleVertex v1, SimpleVertex v2);
 };

@@ -2,21 +2,18 @@
 // File: SkinnedMesh.fx
 //--------------------------------------------------------------------------------------
 
-Texture2D txDiffuse : register(t0);
-Texture2D txNormal : register(t1);
-
-SamplerState samlinear : register(s0);
-
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
 
 static int MAX_BONES = 50;
 
-cbuffer ConstantBuffer : register(b0)
+cbuffer ConstantBuffer : register(b1)
 {
     float4x4 WorldMatrixArray[50] : WORLDMATRIXARRAY;
     float4x4 ViewProjection;
+
+    matrix ShadowTransform;
 }
 
 struct VS_INPUT
@@ -26,6 +23,7 @@ struct VS_INPUT
     float4 BlendIndices : BLENDINDICES;
     float3 Normal : NORMAL;
     float3 Tex0 : TEXCOORD0;
+    float3 Tangent : TANGENT;
 };
 
 struct VS_OUTPUT
@@ -40,7 +38,7 @@ struct VS_OUTPUT
 
 VS_OUTPUT SkinnedVS(VS_INPUT input)
 {
-    VS_OUTPUT output;
+    VS_OUTPUT output = (VS_OUTPUT) 0;
 
     // cast the vectors to arrays for use in the for loop below
     int4 IndexVector = D3DCOLORtoUBYTE4(input.BlendIndices); // convert from float4 to int4
@@ -56,9 +54,20 @@ VS_OUTPUT SkinnedVS(VS_INPUT input)
         Normal += mul(input.Normal, WorldMatrixArray[IndexArray[iBone]]) * BlendWeightsArray[iBone];
     }
 
+    float4 posW = input.Pos;
+    output.PosW = posW.xyz;
+
+    //Pos = input.Pos;
+    //Normal = input.Normal;
+
     // transform position from world space into view and then projection space
     output.PosH = mul(float4(Pos.xyz, 1.0f), ViewProjection);
 
+    output.NormW = float4(Normal.xyz, 1.0f);
+
+    output.TangentW = float4(input.Tangent, 0.0f);
+
+    output.ShadowPosH = mul(posW, ShadowTransform);
     output.Tex = input.Tex0;
 
 	return output;

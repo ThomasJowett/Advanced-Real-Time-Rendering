@@ -7,6 +7,8 @@
 #include<map>
 #include<string>
 
+#include "GameObject.h"//just for material
+
 class AnimatedModel
 {
 private:
@@ -14,24 +16,29 @@ private:
 
 	ID3D11ShaderResourceView * _textureRV;
 
-	Joint* _rootJoint;
+	Material _material;
+
+	Joint* _rootJoint = nullptr;
 	int _jointCount;
 
-	Animation* _currentAnimation;
+	Animation* _currentAnimation = nullptr;
 	float _animationTime = 0;
 
 public:
-	AnimatedModel(Mesh mesh, ID3D11ShaderResourceView* textureRV, Joint* rootJoint, int jointCount);
+	AnimatedModel(AnimatedModelData modelData, ID3D11ShaderResourceView* textureRV, ID3D11Device * d3dDevice);
 	~AnimatedModel();
 
 	void DoAnimation(Animation* animation);
 
 	void Update(float deltaTime);
 
-	XMMATRIX GetJointTransforms();
+	XMMATRIX* GetJointTransforms();
 
 	void Draw(ID3D11DeviceContext* pImmediateContext);
 
+	ID3D11ShaderResourceView *GetTextureRV() { return _textureRV; }
+
+	Material GetMaterial() { return _material; }
 private:
 
 	void IncreaseAnimationTime(float deltaTime);
@@ -46,5 +53,7 @@ private:
 
 	std::map<std::string, XMMATRIX> InterpolatePoses(KeyFrame previousFrame, KeyFrame NextFrame, float progression);
 
-	void AddJointsToArray(Joint* headJoint, std::vector<XMMATRIX> jointMatirces);
+	void AddJointsToArray(Joint* rootJoint, XMMATRIX* jointMatirces);
+
+	Joint* CreateJoints(JointData data);
 };

@@ -2,6 +2,7 @@
 #include <string>
 #include <DirectXMath.h>
 #include <vector>
+#include "Vector.h"
 
 using namespace DirectX;
 
@@ -27,11 +28,11 @@ public:
 struct SkeletonData
 {
 	int jointCount;
-	JointData headJoint;
+	JointData rootJoint;
 
 public:
-	SkeletonData(int jointCount, JointData headJoint)
-		:jointCount(jointCount), headJoint(headJoint) {}
+	SkeletonData(int jointCount, JointData rootJoint)
+		:jointCount(jointCount), rootJoint(rootJoint) {}
 };
 
 struct SkeletalMeshData
@@ -84,6 +85,44 @@ struct VertexSkinData
 			jointIds.resize(max);
 			weights.resize(max);
 		}
+	}
+
+	XMFLOAT4 GetWeights()
+	{
+		XMFLOAT4 returnWeights = { 0.0f,0.0f,0.0f,0.0f };
+
+		for (int i = 0; i < weights.size(); i++)
+		{
+			if (i == 0)
+				returnWeights.x = weights[i];
+			if (i == 1)
+				returnWeights.y = weights[i];
+			if (i == 2)
+				returnWeights.z = weights[i];
+			if (i == 3)
+				returnWeights.w = weights[i];
+		}
+
+		return returnWeights;
+	}
+
+	XMFLOAT4 GetBoneIndices()
+	{
+		XMFLOAT4 returnIndices = { 0.0f,0.0f,0.0f,0.0f };
+
+		for (int i = 0; i < jointIds.size(); i++)
+		{
+			if (i == 0)
+				returnIndices.x = jointIds[i];
+			if (i == 1)
+				returnIndices.y = jointIds[i];
+			if (i == 2)
+				returnIndices.z = jointIds[i];
+			if (i == 3)
+				returnIndices.w = jointIds[i];
+		}
+
+		return returnIndices;
 	}
 };
 
@@ -148,9 +187,9 @@ struct VertexData
 struct AnimatedModelData
 {
 	SkeletonData joints;
-	SkeletalMeshData meshData;
+	IndexedSkeletalModel meshData;
 
-	AnimatedModelData(SkeletonData joints, SkeletalMeshData meshData)
+	AnimatedModelData(SkeletonData joints, IndexedSkeletalModel meshData)
 		:joints(joints), meshData(meshData) {}
 
 	AnimatedModelData()
@@ -158,38 +197,28 @@ struct AnimatedModelData
 
 	IndexedModel ToIndexedModel()
 	{
-		SimpleVertex* verts = new SimpleVertex[meshData.vertices.size()/3];
-		for (int i = 0; i < meshData.vertices.size()/3; i++)
+		SimpleVertex* verts = new SimpleVertex[meshData.Vertices.size()];
+		for (int i = 0; i < meshData.Vertices.size(); i++)
 		{
-			verts[i].PosL.x = meshData.vertices[i * 3];
-			verts[i].PosL.y = meshData.vertices[i * 3 + 1];
-			verts[i].PosL.z = meshData.vertices[i * 3 + 2];
+			verts[i].PosL = meshData.Vertices[i].PosL;
 
-			verts[i].NormL.x = meshData.normals[i * 3];
-			verts[i].NormL.y = meshData.normals[i * 3 + 1];
-			verts[i].NormL.z = meshData.normals[i * 3 + 2];
+			verts[i].NormL = meshData.Vertices[i].NormL;
 
-			verts[i].Tangent.x = 0.0f;
-			verts[i].Tangent.y = 1.0f;
-			verts[i].Tangent.z = 0.0f;
+			verts[i].Tex = meshData.Vertices[i].Tex;
+
+			verts[i].Tangent = meshData.Vertices[i].Tangent;
 		}
 
-		for (int i = 0; i < meshData.textureCoords.size() / 2; i++)
+		unsigned short* indicesArray = new unsigned short[meshData.Indices.size()];
+		for (int i = 0; i < meshData.Indices.size(); i++)
 		{
-			verts[i].Tex.x = meshData.textureCoords[i / 2];
-			verts[i].Tex.y = meshData.textureCoords[i / 2 + 1];
-		}
-
-		unsigned short* indicesArray = new unsigned short[meshData.indices.size()];
-		for (int i = 0; i < meshData.indices.size(); i++)
-		{
-			indicesArray[i] = meshData.indices[i];
+			indicesArray[i] = meshData.Indices[i];
 		}
 
 		IndexedModel returnGeometry;
 
-		returnGeometry.Vertices.assign(&verts[0], &verts[meshData.vertices.size() / 3]);
-		returnGeometry.Indices.assign(&indicesArray[0], &indicesArray[meshData.indices.size()]);
+		returnGeometry.Vertices.assign(&verts[0], &verts[meshData.Vertices.size()]);
+		returnGeometry.Indices.assign(&indicesArray[0], &indicesArray[meshData.Indices.size()]);
 
 		return returnGeometry;
 	}

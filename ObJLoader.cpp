@@ -142,14 +142,14 @@ IndexedModel OBJLoader::Load(const char * filename, bool invertCoordinates)
 				finalVerts[i].Tex = meshTexCoords[i];
 			}
 
-			InsertTangentsIntoArray(finalVerts, numMeshVertices);
-
 			unsigned short* indicesArray = new unsigned short[meshIndices.size()];
 			unsigned int numMeshIndices = meshIndices.size();
 			for (unsigned int i = 0; i < numMeshIndices; ++i)
 			{
 				indicesArray[i] = meshIndices[i];
 			}
+
+			InsertTangentsIntoArray(finalVerts, indicesArray, numMeshVertices);
 
 			//Create the indexed model
 			IndexedModel returnGeometry;
@@ -260,7 +260,7 @@ void OBJLoader::CreateIndices(const std::vector<XMFLOAT3>& inVertices,
 	}
 }
 
-void OBJLoader::InsertTangentsIntoArray(SimpleVertex* vertices, int vertexCount)
+void OBJLoader::InsertTangentsIntoArray(SimpleVertex* vertices, unsigned short* indices, int vertexCount)
 {
 	int faceCount, i, index;
 	SimpleVertex vertex1, vertex2, vertex3;
@@ -281,51 +281,51 @@ void OBJLoader::InsertTangentsIntoArray(SimpleVertex* vertices, int vertexCount)
 			int x = 1;
 		}
 		// Get the three vertices for this face from the model.
-		vertex1.PosL.x = vertices[index].PosL.x;
-		vertex1.PosL.y = vertices[index].PosL.y;
-		vertex1.PosL.z = vertices[index].PosL.z;
-		vertex1.Tex.x = vertices[index].Tex.x;
-		vertex1.Tex.y = vertices[index].Tex.y;
-		vertex1.NormL.x = vertices[index].NormL.x;
-		vertex1.NormL.y = vertices[index].NormL.y;
-		vertex1.NormL.z = vertices[index].NormL.z;
+		vertex1.PosL.x = vertices[indices[index]].PosL.x;
+		vertex1.PosL.y = vertices[indices[index]].PosL.y;
+		vertex1.PosL.z = vertices[indices[index]].PosL.z;
+		vertex1.Tex.x = vertices[indices[index]].Tex.x;
+		vertex1.Tex.y = vertices[indices[index]].Tex.y;
+		vertex1.NormL.x = vertices[indices[index]].NormL.x;
+		vertex1.NormL.y = vertices[indices[index]].NormL.y;
+		vertex1.NormL.z = vertices[indices[index]].NormL.z;
 		index++;
 
-		vertex2.PosL.x = vertices[index].PosL.x;
-		vertex2.PosL.y = vertices[index].PosL.y;
-		vertex2.PosL.z = vertices[index].PosL.z;
-		vertex2.Tex.x = vertices[index].Tex.x;
-		vertex2.Tex.y = vertices[index].Tex.y;
-		vertex2.NormL.x = vertices[index].NormL.x;
-		vertex2.NormL.y = vertices[index].NormL.y;
-		vertex2.NormL.z = vertices[index].NormL.z;
+		vertex2.PosL.x = vertices[indices[index]].PosL.x;
+		vertex2.PosL.y = vertices[indices[index]].PosL.y;
+		vertex2.PosL.z = vertices[indices[index]].PosL.z;
+		vertex2.Tex.x = vertices[indices[index]].Tex.x;
+		vertex2.Tex.y = vertices[indices[index]].Tex.y;
+		vertex2.NormL.x = vertices[indices[index]].NormL.x;
+		vertex2.NormL.y = vertices[indices[index]].NormL.y;
+		vertex2.NormL.z = vertices[indices[index]].NormL.z;
 		index++;
 
-		vertex3.PosL.x = vertices[index].PosL.x;
-		vertex3.PosL.y = vertices[index].PosL.y;
-		vertex3.PosL.z = vertices[index].PosL.z;
-		vertex3.Tex.x = vertices[index].Tex.x;
-		vertex3.Tex.y = vertices[index].Tex.y;
-		vertex3.NormL.x = vertices[index].NormL.x;
-		vertex3.NormL.y = vertices[index].NormL.y;
-		vertex3.NormL.z = vertices[index].NormL.z;
+		vertex3.PosL.x = vertices[indices[index]].PosL.x;
+		vertex3.PosL.y = vertices[indices[index]].PosL.y;
+		vertex3.PosL.z = vertices[indices[index]].PosL.z;
+		vertex3.Tex.x = vertices[indices[index]].Tex.x;
+		vertex3.Tex.y = vertices[indices[index]].Tex.y;
+		vertex3.NormL.x = vertices[indices[index]].NormL.x;
+		vertex3.NormL.y = vertices[indices[index]].NormL.y;
+		vertex3.NormL.z = vertices[indices[index]].NormL.z;
 		index++;
 
 		tangent = CalculateTangent(vertex1, vertex2, vertex3);
 
 		// Store the normal, tangent, and binormal for this face back in the model structure.
 		
-		vertices[index - 1].Tangent.x = tangent.x;
-		vertices[index - 1].Tangent.y = tangent.y;
-		vertices[index - 1].Tangent.z = tangent.z;
+		vertices[indices[index - 1]].Tangent.x = tangent.x;
+		vertices[indices[index - 1]].Tangent.y = tangent.y;
+		vertices[indices[index - 1]].Tangent.z = tangent.z;
 
-		vertices[index - 2].Tangent.x = tangent.x;
-		vertices[index - 2].Tangent.y = tangent.y;
-		vertices[index - 2].Tangent.z = tangent.z;
-							
-		vertices[index - 3].Tangent.x = tangent.x;
-		vertices[index - 3].Tangent.y = tangent.y;
-		vertices[index - 3].Tangent.z = tangent.z;
+		vertices[indices[index - 2]].Tangent.x = tangent.x;
+		vertices[indices[index - 2]].Tangent.y = tangent.y;
+		vertices[indices[index - 2]].Tangent.z = tangent.z;
+
+		vertices[indices[index - 3]].Tangent.x = tangent.x;
+		vertices[indices[index - 3]].Tangent.y = tangent.y;
+		vertices[indices[index - 3]].Tangent.z = tangent.z;
 	}
 }
 

@@ -1,13 +1,23 @@
 #include "AnimatedModel.h"
 
-AnimatedModel::AnimatedModel(Mesh geometry, ID3D11ShaderResourceView * textureRV, Joint* rootJoint, int jointCount)
-	:_geometry(geometry), _textureRV(textureRV), _rootJoint(rootJoint), _jointCount(jointCount)
+AnimatedModel::AnimatedModel(AnimatedModelData modelData, ID3D11ShaderResourceView * textureRV, ID3D11Device * d3dDevice)
+	: _textureRV(textureRV)
 {
+	_geometry = Mesh(modelData.meshData, d3dDevice);
+
+	_rootJoint = CreateJoints(modelData.joints.rootJoint);
+
+	_jointCount = modelData.joints.jointCount;
+
+	_material.ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
+	_material.diffuse = XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f);
+	_material.specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+	_material.specularPower = 0.0f;
 }
 
 AnimatedModel::~AnimatedModel()
 {
-
+	if (_rootJoint) delete _rootJoint;
 }
 
 void AnimatedModel::DoAnimation(Animation* animation)
@@ -30,17 +40,19 @@ void AnimatedModel::Update(float deltaTime)
 	ApplyPoseToJoints(currentPos, _rootJoint, XMMATRIX());
 }
 
-XMMATRIX AnimatedModel::GetJointTransforms()
+XMMATRIX* AnimatedModel::GetJointTransforms()
 {
-	std::vector<XMMATRIX> jointMatrices;
-	jointMatrices.resize(_jointCount);
+	XMMATRIX* jointMatrices = new XMMATRIX[_jointCount];
 	AddJointsToArray(_rootJoint, jointMatrices);
-	return XMMATRIX();
+	return jointMatrices;
 }
 
 void AnimatedModel::Draw(ID3D11DeviceContext * pImmediateContext)
 {
+	pImmediateContext->IASetVertexBuffers(0, 1, &_geometry._vertexBuffer, &_geometry._vertexBufferStride, &_geometry._vertexBufferOffset);
+	pImmediateContext->IASetIndexBuffer(_geometry._indexBuffer, DXGI_FORMAT_R16_UINT, 0);
 
+	pImmediateContext->DrawIndexed(_geometry._numberOfIndices, 0, 0);
 }
 
 void AnimatedModel::IncreaseAnimationTime(float deltaTime)
@@ -115,11 +127,22 @@ std::map<std::string, XMMATRIX> AnimatedModel::InterpolatePoses(KeyFrame previou
 	return currentPose;
 }
 
-void AnimatedModel::AddJointsToArray(Joint* headJoint, std::vector<XMMATRIX> jointMatirces)
+void AnimatedModel::AddJointsToArray(Joint* rootJoint, XMMATRIX* jointMatirces)
 {
-	jointMatirces[headJoint->_index] = headJoint->GetAnimatedTransform();
-	for (Joint* childJoint : headJoint->_children)
+	jointMatirces[rootJoint->_index] = rootJoint->GetAnimatedTransform();
+	for (Joint* childJoint : rootJoint->_children)
 	{
 		AddJointsToArray(childJoint, jointMatirces);
 	}
+}
+
+Joint * AnimatedModel::CreateJoints(JointData data)
+{
+	Joint* joint = new Joint(data.index, data.nameID, data.bindLocalTransform);
+
+	for (JointData* child : data.children)
+	{
+		joint->AddChild(CreateJoints(*child));
+	}
+	return joint;
 }

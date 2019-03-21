@@ -144,6 +144,7 @@ static const float SMAP_DX = 1.0f / SMAP_SIZE;
 //Soft Shadows
 float CalcShadowFactor(float4 shadowPosH)
 {
+    return 1.0f;
     //if pixel is outside the shadowmap projection then return no shadow
     if (shadowPosH.x > 1.0f || shadowPosH.x < 0.0f || shadowPosH.z > 1.0f || shadowPosH.z < 0.0f || shadowPosH.y > 1.0f || shadowPosH.y < 0.0f)
         return 1.0f;

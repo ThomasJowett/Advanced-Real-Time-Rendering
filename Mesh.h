@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Commons.h"
+#include "AnimatedModelData.h"
 
 using namespace DirectX;
 
@@ -20,13 +21,6 @@ public:
 
 	Mesh() {};
 	Mesh(IndexedModel model, ID3D11Device* d3dDevice);
+	Mesh(IndexedSkeletalModel model, ID3D11Device* d3dDevice);
 	~Mesh();
-};
-
-class SkeletalMesh
-{
-public:
-	ID3D11Buffer * _vertexBuffer;
-	ID3D11Buffer * _indexBuffer;
-	int _numberOfIndices;
 };

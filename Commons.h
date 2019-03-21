@@ -51,11 +51,11 @@ struct TerrainVertex
 struct SkeletalVertex
 {
 	XMFLOAT3 PosL;
+	XMFLOAT4 Weights;
+	XMFLOAT4 BoneIndices;
 	XMFLOAT3 NormL;
-	XMFLOAT3 Tangent;
 	XMFLOAT2 Tex;
-	XMFLOAT3 Weights;
-	BYTE BoneIndices[4];
+	XMFLOAT3 Tangent;
 };
 
 struct SurfaceInfo
@@ -179,11 +179,23 @@ __declspec(align(16)) struct SSAOBlurConstantBuffer
 	BOOL HorizontalBlur;
 };
 
+__declspec(align(16)) struct SkinnedConstantBuffer
+{
+	XMMATRIX WorldMatrixArray[50];
+	XMMATRIX ViewProjection;
 
+	XMMATRIX ShadowTransform;
+};
 
 struct IndexedModel
 {
 	std::vector<SimpleVertex> Vertices;
+	std::vector<WORD> Indices;
+};
+
+struct IndexedSkeletalModel
+{
+	std::vector<SkeletalVertex> Vertices;
 	std::vector<WORD> Indices;
 };
 
