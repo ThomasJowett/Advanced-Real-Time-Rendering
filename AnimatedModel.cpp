@@ -40,9 +40,8 @@ void AnimatedModel::Update(float deltaTime)
 	ApplyPoseToJoints(currentPos, _rootJoint, XMMATRIX());
 }
 
-XMMATRIX* AnimatedModel::GetJointTransforms()
+XMMATRIX* AnimatedModel::GetJointTransforms(XMMATRIX* jointMatrices)
 {
-	XMMATRIX* jointMatrices = new XMMATRIX[_jointCount];
 	AddJointsToArray(_rootJoint, jointMatrices);
 	return jointMatrices;
 }

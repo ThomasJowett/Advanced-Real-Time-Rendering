@@ -462,9 +462,9 @@ HRESULT Application::InitShadersAndInputLayout()
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
 	UINT numElements = ARRAYSIZE(layout);
@@ -543,6 +543,9 @@ HRESULT Application::InitShadersAndInputLayout()
 
 	numElements = ARRAYSIZE(layoutSSOA);
 
+	if (FAILED(hr))
+		return hr;
+
 	// Create the input layout
 	hr = _pd3dDevice->CreateInputLayout(layoutSSOA, numElements, pVSBlob->GetBufferPointer(),
 		pVSBlob->GetBufferSize(), &_pSSOALayout);
@@ -574,29 +577,39 @@ HRESULT Application::InitShadersAndInputLayout()
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
+
+	numElements = ARRAYSIZE(layoutTerrain);
 
 	// Create the input layout
 	hr = _pd3dDevice->CreateInputLayout(layoutTerrain, numElements, pVSBlob->GetBufferPointer(),
 		pVSBlob->GetBufferSize(), &_pTerrainLayout);
+
+	if (FAILED(hr))
+		return hr;
 
 	hr = CompileShaderFromFile(L"SkinnedMesh.fx", "SkinnedVS", "vs_5_0", &pVSBlob);
 	hr = _pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &_pSkinnedVertexShader);
 
 	D3D11_INPUT_ELEMENT_DESC layoutSkinned[] = 
 	{
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{ "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD0", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 60, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 60, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
+
+	numElements = ARRAYSIZE(layoutSkinned);
 
 	// Create the input layout
 	hr = _pd3dDevice->CreateInputLayout(layoutSkinned, numElements, pVSBlob->GetBufferPointer(),
 		pVSBlob->GetBufferSize(), &_pSkinnedLayout);
+
+	if (FAILED(hr))
+		return hr;
 
 	pVSBlob->Release();
 	pPSBlob->Release();
@@ -1399,6 +1412,7 @@ void Application::Draw()
 	_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	_pImmediateContext->IASetInputLayout(_pSkinnedLayout);
+	//_pImmediateContext->IASetInputLayout(_pVertexLayout);
 	_pImmediateContext->VSSetShader(_pSkinnedVertexShader, nullptr, 0);
 	_pImmediateContext->PSSetShader(_pNormalPixelShader, nullptr, 0);
 	_pImmediateContext->HSSetShader(nullptr, nullptr, 0);
@@ -1419,11 +1433,11 @@ void Application::Draw()
 
 	XMMATRIX* boneMatrices = reinterpret_cast<XMMATRIX*>(skinCb.WorldMatrixArray);
 
-	boneMatrices = _character->GetJointTransforms();
+	_character->GetJointTransforms(boneMatrices);
 
 	skinCb.ViewProjection = XMMatrixTranspose(XMMatrixMultiply(view, projection));
 	skinCb.ShadowTransform = XMMatrixTranspose(shadowTransform);
-	cb.HasTexture = 1.0f;
+	cb.HasTexture = 0.0f;
 
 	Material material = _character->GetMaterial();
 

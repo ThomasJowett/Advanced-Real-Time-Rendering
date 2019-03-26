@@ -23,7 +23,7 @@ public:
 	Joint(int index, std::string name, XMMATRIX bindLocalTransform)
 		:_index(index), _name(name), _localBindTransform(bindLocalTransform)
 	{
-		_animatedTransform = _localBindTransform;
+		_animatedTransform = XMMatrixIdentity();
 	}
 
 	void AddChild(Joint* child)

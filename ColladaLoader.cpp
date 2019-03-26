@@ -40,11 +40,61 @@ AnimationData ColladaLoader::LoadAnimation(const char * filename)
 		tinyxml2::XMLElement* pRoot;
 
 		pRoot = doc.FirstChildElement("COLLADA");
+		tinyxml2::XMLElement* pNode;
 
-		tinyxml2::XMLElement* pNode = pRoot->FirstChildElement("library_animations");
+		std::string rootJointName;
+
+		pNode = pRoot->FirstChildElement("library_visual_scenes")->FirstChildElement("visual_scene")->FirstChildElement("node");
+
+		while (pNode)
+		{
+			if (strcmp(pNode->Attribute("id"), "Armature") == 0)
+			{
+				pNode = pNode->FirstChildElement("node");
+				rootJointName = pNode->Attribute("id");
+				break;
+			}
+
+			pNode = pNode->NextSiblingElement("node");
+		}
+
+		pNode = pRoot->FirstChildElement("library_animations");
+
+		
 
 		if (pNode)
 		{
+			tinyxml2::XMLElement* pAnimation = pNode->FirstChildElement("animation");
+
+			while (pAnimation)
+			{
+				std::string inputID, outputID;
+
+				tinyxml2::XMLElement* pSampler = pAnimation->FirstChildElement("sampler");
+
+				tinyxml2::XMLElement* pInput = pSampler->FirstChildElement("input");
+
+				while (pInput)
+				{
+					if (strcmp(pInput->Attribute("semantic"), "INPUT") == 0)
+					{
+						inputID = pInput->Attribute("source");
+						inputID.erase(inputID.begin());
+					}
+					else if(strcmp(pInput->Attribute("semantic"), "OUPUT") == 0)
+					{
+						outputID = pInput->Attribute("source");
+						outputID.erase(outputID.begin());
+					}
+					pInput = pInput->NextSiblingElement("input");
+				}
+
+				tinyxml2::XMLElement* pSource = pAnimation->FirstChildElement("source");
+
+
+
+				pAnimation = pAnimation->NextSiblingElement("animation");
+			}
 			//TODO: load animation data
 		}
 	}

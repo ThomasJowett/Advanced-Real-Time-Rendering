@@ -44,18 +44,17 @@ struct TerrainVertex
 	XMFLOAT3 PosL;
 	XMFLOAT2 Tex;
 	XMFLOAT2 BoundsY;
-
-
 };
 
 struct SkeletalVertex
 {
 	XMFLOAT3 PosL;
-	XMFLOAT4 Weights;
-	XMFLOAT4 BoneIndices;
-	XMFLOAT3 NormL;
-	XMFLOAT2 Tex;
 	XMFLOAT3 Tangent;
+	
+	XMFLOAT3 NormL;
+	XMFLOAT4 BoneIndices;
+	XMFLOAT4 Weights;
+	XMFLOAT2 Tex;
 };
 
 struct SurfaceInfo

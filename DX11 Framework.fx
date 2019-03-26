@@ -144,7 +144,6 @@ static const float SMAP_DX = 1.0f / SMAP_SIZE;
 //Soft Shadows
 float CalcShadowFactor(float4 shadowPosH)
 {
-    return 1.0f;
     //if pixel is outside the shadowmap projection then return no shadow
     if (shadowPosH.x > 1.0f || shadowPosH.x < 0.0f || shadowPosH.z > 1.0f || shadowPosH.z < 0.0f || shadowPosH.y > 1.0f || shadowPosH.y < 0.0f)
         return 1.0f;
@@ -207,6 +206,11 @@ float4 NormalPS(VS_OUTPUT_NORMAL input) : SV_Target
 	bumpMap = (bumpMap * 2.0f) -1.0f;
 	float3 bumpedNormalW = NormalSampleToWorldSpace(bumpMap.xyz, input.NormW, input.TangentW.xyz);
 
+    if(HasTexture == 0.0f)
+    {
+        bumpedNormalW = input.NormW;
+    }
+
 	float3 ambient = float3(0.0f, 0.0f, 0.0f);
 	float3 diffuse = float3(0.0f, 0.0f, 0.0f);
 	float3 specular = float3(0.0f, 0.0f, 0.0f);
@@ -251,6 +255,8 @@ float4 NormalPS(VS_OUTPUT_NORMAL input) : SV_Target
 	}
 
 	finalColour.a = surface.DiffuseMtrl.a;
+
+    return float4(input.ShadowPosH);
 
 	return finalColour;
 }

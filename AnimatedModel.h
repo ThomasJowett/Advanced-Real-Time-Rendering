@@ -32,7 +32,7 @@ public:
 
 	void Update(float deltaTime);
 
-	XMMATRIX* GetJointTransforms();
+	XMMATRIX* GetJointTransforms(XMMATRIX* jointMatrices);
 
 	void Draw(ID3D11DeviceContext* pImmediateContext);
 
