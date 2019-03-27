@@ -10,9 +10,13 @@ AnimatedModel::AnimatedModel(AnimatedModelData modelData, ID3D11ShaderResourceVi
 	_jointCount = modelData.joints.jointCount;
 
 	_material.ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
-	_material.diffuse = XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f);
+	_material.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	_material.specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	_material.specularPower = 0.0f;
+
+	XMFLOAT4X4 identity;
+	XMStoreFloat4x4(&identity, XMMatrixIdentity());
+	_rootJoint->CalculateInverseBindTransform(identity);
 }
 
 AnimatedModel::~AnimatedModel()
@@ -40,10 +44,9 @@ void AnimatedModel::Update(float deltaTime)
 	ApplyPoseToJoints(currentPos, _rootJoint, XMMATRIX());
 }
 
-XMMATRIX* AnimatedModel::GetJointTransforms(XMMATRIX* jointMatrices)
+void AnimatedModel::GetJointTransforms(XMMATRIX* jointMatrices)
 {
 	AddJointsToArray(_rootJoint, jointMatrices);
-	return jointMatrices;
 }
 
 void AnimatedModel::Draw(ID3D11DeviceContext * pImmediateContext)
@@ -85,9 +88,13 @@ void AnimatedModel::ApplyPoseToJoints(std::map<std::string, XMMATRIX> currentPos
 		ApplyPoseToJoints(currentPose, childJoint, currentTransform);
 	}
 
-	currentTransform = XMMatrixMultiply(currentTransform, joint->GetInverseBindTransform());
+	currentTransform = XMMatrixMultiply(currentTransform, XMLoadFloat4x4(&joint->GetInverseBindTransform()));
 
-	joint->SetAnimationTransform(currentTransform);
+	XMFLOAT4X4 currentTransformAsFloats;
+
+	XMStoreFloat4x4(&currentTransformAsFloats, currentTransform);
+
+	joint->SetAnimationTransform(currentTransformAsFloats);
 }
 
 void AnimatedModel::GetPreviousAndNextFrames(KeyFrame & previousFrame, KeyFrame & nextFrame)
@@ -126,12 +133,12 @@ std::map<std::string, XMMATRIX> AnimatedModel::InterpolatePoses(KeyFrame previou
 	return currentPose;
 }
 
-void AnimatedModel::AddJointsToArray(Joint* rootJoint, XMMATRIX* jointMatirces)
+void AnimatedModel::AddJointsToArray(Joint * rootJoint, XMMATRIX * jointMatrices)
 {
-	jointMatirces[rootJoint->_index] = rootJoint->GetAnimatedTransform();
+	jointMatrices[rootJoint->_index] = XMLoadFloat4x4(_currentAnimation ? &rootJoint->GetInverseBindTransform() : &rootJoint->GetInverseBindTransform());
 	for (Joint* childJoint : rootJoint->_children)
 	{
-		AddJointsToArray(childJoint, jointMatirces);
+		AddJointsToArray(childJoint, jointMatrices);
 	}
 }
 

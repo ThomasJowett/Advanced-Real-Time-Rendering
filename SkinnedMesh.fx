@@ -10,8 +10,8 @@ static int MAX_BONES = 50;
 
 cbuffer ConstantBuffer : register(b1)
 {
-    float4x4 WorldMatrixArray[50] : WORLDMATRIXARRAY;
-    float4x4 ViewProjection;
+    matrix WorldMatrixArray[50] : WORLDMATRIXARRAY;
+    matrix ViewProjection;
 
     matrix ShadowTransform;
 }
@@ -21,9 +21,10 @@ struct VS_INPUT
     float4 Pos : POSITION;
     float3 Tangent : TANGENT;
     float3 Normal : NORMAL;
+    float2 Tex0 : TEXCOORD0;
     float4 BlendIndices : BLENDINDICES;
     float4 BlendWeights : BLENDWEIGHT;
-    float2 Tex0 : TEXCOORD0;
+    
 };
 
 struct VS_OUTPUT
@@ -54,17 +55,19 @@ VS_OUTPUT SkinnedVS(VS_INPUT input)
 
     for (int iBone = 0; iBone < 4; iBone++)
     {	
-        Pos += mul(input.Pos, WorldMatrixArray[IndexArray[iBone]]) * BlendWeightsArray[iBone];
-        Normal += mul(inputNormal, WorldMatrixArray[IndexArray[iBone]]) * BlendWeightsArray[iBone];
-        Tangent += mul(inputTangent, WorldMatrixArray[IndexArray[iBone]]) * BlendWeightsArray[iBone];
+        Pos += mul(input.Pos, WorldMatrixArray[IndexArray[iBone] + 1]) * BlendWeightsArray[iBone];
+        Normal += mul(inputNormal, WorldMatrixArray[IndexArray[iBone] + 1]) * BlendWeightsArray[iBone];
+        Tangent += mul(inputTangent, WorldMatrixArray[IndexArray[iBone] + 1]) * BlendWeightsArray[iBone];
     }
+    
+    Pos = input.Pos;
+    //Normal = input.Normal.rgb;
+    //Tangent = input.Tangent.rgb;
+
+    //Normal = input.BlendWeights;
 
     float4 posW = float4(Pos, 1.0f);
     output.PosW = posW.xyz;
-
-    //Pos = input.Pos;
-    //Normal = input.Normal.rgb;
-    //Normal = float3(1.0f, 0.0f, 0.0f);
 
     // transform position from world space into view and then projection space
     output.PosH = mul(float4(Pos.xyz, 1.0f), ViewProjection);
@@ -75,6 +78,8 @@ VS_OUTPUT SkinnedVS(VS_INPUT input)
 
     output.ShadowPosH = mul(posW, ShadowTransform);
     output.Tex = input.Tex0;
+
+    output.NormW = float3(IndexArray[0], IndexArray[2], IndexArray[1]);
 
 	return output;
 }

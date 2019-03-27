@@ -228,9 +228,12 @@ JointData* ColladaLoader::LoadJointData(tinyxml2::XMLElement * node, bool isRoot
 	if (isRoot)
 	{
 		//rotate the root bone so that it is facing upwards
-		matrix = matrix * XMMatrixRotationX(-XM_PIDIV2);
+		//matrix = matrix * XMMatrixRotationX(-XM_PIDIV2);
 	}
-	JointData* joint = new JointData(index, nameId, matrix);
+
+	XMFLOAT4X4 matrixAsFloats;
+	XMStoreFloat4x4(&matrixAsFloats, matrix);
+	JointData* joint = new JointData(index, nameId, matrixAsFloats);
 
 
 	tinyxml2::XMLElement * childNode = node->FirstChildElement("node");
@@ -245,12 +248,6 @@ JointData* ColladaLoader::LoadJointData(tinyxml2::XMLElement * node, bool isRoot
 
 IndexedSkeletalModel ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, std::vector<VertexSkinData> vertexSkinData)
 {
-	std::vector<float> verticesArray;
-	std::vector<float> normalsArray;
-	std::vector<float> texturesArray;
-	std::vector<int> jointIdsArray;
-	std::vector<float> weightsArray;
-
 	std::vector<VertexData> verts;
 	std::vector<XMFLOAT3> normals;
 	std::vector<XMFLOAT2> TexCoords;
@@ -397,16 +394,7 @@ IndexedSkeletalModel ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, st
 			vertex.textureIndex = 0;
 			vertex.normalIndex = 0;
 		}
-	}
-
-	//initialise the arrays -------------------------------------------------------------------------------------------------------
-	verticesArray.resize(verts.size() * 3);
-	texturesArray.resize(verts.size() * 3);
-	normalsArray.resize(verts.size() * 3);
-	jointIdsArray.resize(verts.size() * 3);
-	weightsArray.resize(verts.size() * 3);
-
-	
+	}	
 
 	SkeletalVertex* finalVerts = new SkeletalVertex[verts.size()];
 
@@ -446,38 +434,6 @@ IndexedSkeletalModel ColladaLoader::LoadGeometry(tinyxml2::XMLElement * node, st
 	indexedSkeletalModel.Indices.assign(&indicesArray[0], &indicesArray[numMeshIndices]);
 
 	return indexedSkeletalModel;
-
-	//float furthestPoint = 0.0f;
-	//for (int i = 0; i < verts.size(); i++)
-	//{
-	//	VertexData currentVertex = verts.at(i);
-	//	if (currentVertex.length > furthestPoint)
-	//	{
-	//		furthestPoint = currentVertex.length;
-	//	}
-	//
-	//	Vector3D position = currentVertex.position;
-	//	XMFLOAT2 textureCoord = TexCoords.at(currentVertex.textureIndex);
-	//	XMFLOAT3 normalVector = normals.at(currentVertex.normalIndex);
-	//	verticesArray[i * 3] = position.x;
-	//	verticesArray[i * 3 + 1] = position.y;
-	//	verticesArray[i * 3 + 2] = position.z;
-	//	texturesArray[i * 2] = textureCoord.x;
-	//	texturesArray[i * 2 + 1] = 1 - textureCoord.y;
-	//	normalsArray[i * 3] = normalVector.x;
-	//	normalsArray[i * 3 + 1] = normalVector.y;
-	//	normalsArray[i * 3 + 2] = normalVector.z;
-	//	VertexSkinData weights = currentVertex.weightsData;
-	//	weights.SetNumberOfEffects(3);//set to three here as that is the maximum number of weights
-	//	jointIdsArray[i * 3] = weights.jointIds.at(0);
-	//	jointIdsArray[i * 3 + 1] = weights.jointIds.at(1);
-	//	jointIdsArray[i * 3 + 2] = weights.jointIds.at(2);
-	//	weightsArray[i * 3] = weights.weights.at(0);
-	//	weightsArray[i * 3 + 1] = weights.weights.at(1);
-	//	weightsArray[i * 3 + 2] = weights.weights.at(2);
-	//}
-	//
-	//return SkeletalMeshData(verticesArray, texturesArray, normalsArray, indices, jointIdsArray, weightsArray);
 }
 
 void ColladaLoader::DealWithAlreadyProcessedVertex(VertexData *previousVertex, int newTextureIndex, int newNormalIndex, std::vector<int> &indices, std::vector<VertexData> &verts)

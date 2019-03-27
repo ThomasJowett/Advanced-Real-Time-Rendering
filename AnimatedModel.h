@@ -32,7 +32,7 @@ public:
 
 	void Update(float deltaTime);
 
-	XMMATRIX* GetJointTransforms(XMMATRIX* jointMatrices);
+	void GetJointTransforms(XMMATRIX* jointMatrices);
 
 	void Draw(ID3D11DeviceContext* pImmediateContext);
 
@@ -53,7 +53,7 @@ private:
 
 	std::map<std::string, XMMATRIX> InterpolatePoses(KeyFrame previousFrame, KeyFrame NextFrame, float progression);
 
-	void AddJointsToArray(Joint* rootJoint, XMMATRIX* jointMatirces);
+	void AddJointsToArray(Joint* rootJoint, XMMATRIX* jointMatrices);
 
 	Joint* CreateJoints(JointData data);
 };

@@ -200,7 +200,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	ID3D11ShaderResourceView *_pAOGunTextureRV;
 	ID3D11ShaderResourceView *_pEmissiveGunTextureRV;
 
-	AnimatedModelData modelData = ColladaLoader::LoadModel("Resources/model.dae", 3);
+	AnimatedModelData modelData = ColladaLoader::LoadModel("Resources/model.dae", 4);
 
 	AnimationData animationData = ColladaLoader::LoadAnimation("Resources/model.dae");
 
@@ -597,9 +597,9 @@ HRESULT Application::InitShadersAndInputLayout()
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
 		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 60, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 60, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
 	numElements = ARRAYSIZE(layoutSkinned);
@@ -929,6 +929,7 @@ HRESULT Application::InitDevice()
 
 void Application::Cleanup()
 {
+
     if (_pImmediateContext) _pImmediateContext->ClearState();
 	if (_pSamplerLinear) _pSamplerLinear->Release();
 	if (_pSamplerShadow) _pSamplerShadow->Release();
@@ -1002,6 +1003,9 @@ void Application::Cleanup()
 			gameObject = nullptr;
 		}
 	}
+
+	if (_character) delete _character;
+
 }
 
 void Application::moveForward(int objectNumber)
@@ -1437,7 +1441,7 @@ void Application::Draw()
 
 	skinCb.ViewProjection = XMMatrixTranspose(XMMatrixMultiply(view, projection));
 	skinCb.ShadowTransform = XMMatrixTranspose(shadowTransform);
-	cb.HasTexture = 0.0f;
+	cb.HasTexture = 1.0f;
 
 	Material material = _character->GetMaterial();
 

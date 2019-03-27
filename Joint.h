@@ -14,16 +14,25 @@ public:
 	std::vector<Joint*> _children;
 
 private:
-	XMMATRIX _animatedTransform;
+	XMFLOAT4X4 _animatedTransform;
 
-	XMMATRIX _localBindTransform;
-	XMMATRIX _inverseBindTransform;
+	XMFLOAT4X4 _localBindTransform;
+	XMFLOAT4X4 _inverseBindTransform;
 
 public:
-	Joint(int index, std::string name, XMMATRIX bindLocalTransform)
+	Joint(int index, std::string name, XMFLOAT4X4 bindLocalTransform)
 		:_index(index), _name(name), _localBindTransform(bindLocalTransform)
 	{
-		_animatedTransform = XMMatrixIdentity();
+		//_localBindTransform = XMMatrixIdentity();
+		//_animatedTransform = XMMatrixIdentity();
+	}
+
+	~Joint()
+	{
+		for (Joint* child : _children)
+		{
+			delete child;
+		}
 	}
 
 	void AddChild(Joint* child)
@@ -31,20 +40,20 @@ public:
 		_children.push_back(child);
 	}
 
-	XMMATRIX GetAnimatedTransform() const
+	XMFLOAT4X4 GetAnimatedTransform() const
 	{
 		return _animatedTransform;
 	}
 
-	void SetAnimationTransform(XMMATRIX animationTransform)
+	void SetAnimationTransform(XMFLOAT4X4 animationTransform)
 	{
 		_animatedTransform = animationTransform;
 	}
 
-	XMMATRIX GetInverseBindTransform() const
+	XMFLOAT4X4 GetInverseBindTransform() const
 	{
 		return _inverseBindTransform;
 	}
 
-	void CalculateInverseBindTransform(XMMATRIX parentBindTransform);
+	void CalculateInverseBindTransform(XMFLOAT4X4 parentBindTransform);
 };

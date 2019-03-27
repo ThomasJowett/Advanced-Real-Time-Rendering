@@ -10,12 +10,12 @@ struct JointData
 {
 	int index;
 	std::string nameID;
-	XMMATRIX bindLocalTransform;
+	XMFLOAT4X4 bindLocalTransform;
 
 	std::vector<JointData*> children;
 
 public:
-	JointData(int index, std::string nameID, XMMATRIX bindLocalTransform)
+	JointData(int index, std::string nameID, XMFLOAT4X4 bindLocalTransform)
 		:index(index), nameID(nameID), bindLocalTransform(bindLocalTransform) {}
 
 	void AddChild(JointData* child)
@@ -72,7 +72,9 @@ struct VertexSkinData
 			if (weight > weights[i])
 			{
 				jointIds.emplace(jointIds.begin() + i, jointId);
+				jointIds.pop_back();
 				weights.emplace(weights.begin() + i, weight);
+				weights.pop_back();
 				break;
 			}
 		}
@@ -80,10 +82,21 @@ struct VertexSkinData
 
 	void LimitJointNumber(int max)
 	{
-		if (jointIds.size() > max)
+		jointIds.resize(max);
+		weights.resize(max);
+
+		float total = 0.0f;
+		for (float weight : weights)
 		{
-			jointIds.resize(max);
-			weights.resize(max);
+			total += weight;
+		}
+
+		if (total != 1.0f)
+		{
+			for (int i = 0; i < max; i++)
+			{
+				weights[i] = (((weights[i] / total) < (1)) ? (weights[i] / total) : (1));
+			}
 		}
 	}
 
@@ -113,13 +126,13 @@ struct VertexSkinData
 		for (int i = 0; i < jointIds.size(); i++)
 		{
 			if (i == 0)
-				returnIndices.x = jointIds[i];
-			if (i == 1)
-				returnIndices.y = jointIds[i];
-			if (i == 2)
-				returnIndices.z = jointIds[i];
-			if (i == 3)
 				returnIndices.w = jointIds[i];
+			if (i == 1)
+				returnIndices.x = jointIds[i];
+			if (i == 2)
+				returnIndices.y = jointIds[i];
+			if (i == 3)
+				returnIndices.z = jointIds[i];
 		}
 
 		return returnIndices;
@@ -193,7 +206,7 @@ struct AnimatedModelData
 		:joints(joints), meshData(meshData) {}
 
 	AnimatedModelData()
-		:joints(SkeletonData(0, JointData(0, "null", XMMATRIX()))) {};
+		:joints(SkeletonData(0, JointData(0, "null", XMFLOAT4X4()))) {};
 
 	IndexedModel ToIndexedModel()
 	{
