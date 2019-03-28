@@ -135,7 +135,7 @@ std::map<std::string, XMMATRIX> AnimatedModel::InterpolatePoses(KeyFrame previou
 
 void AnimatedModel::AddJointsToArray(Joint * rootJoint, XMMATRIX * jointMatrices)
 {
-	jointMatrices[rootJoint->_index] = XMLoadFloat4x4(_currentAnimation ? &rootJoint->GetInverseBindTransform() : &rootJoint->GetInverseBindTransform());
+	jointMatrices[rootJoint->_index] = _currentAnimation ? XMLoadFloat4x4(&rootJoint->GetAnimatedTransform()) : XMMatrixIdentity();
 	for (Joint* childJoint : rootJoint->_children)
 	{
 		AddJointsToArray(childJoint, jointMatrices);

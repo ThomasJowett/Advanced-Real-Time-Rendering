@@ -82,6 +82,9 @@ struct VertexSkinData
 
 	void LimitJointNumber(int max)
 	{
+		if (max > 4)
+			max = 4;
+
 		jointIds.resize(max);
 		weights.resize(max);
 
@@ -113,26 +116,27 @@ struct VertexSkinData
 			if (i == 2)
 				returnWeights.z = weights[i];
 			if (i == 3)
-				returnWeights.w = weights[i];
+				//returnWeights.w = weights[i];
+				returnWeights.w = 1.0f - weights[0] - weights[1] - weights[2];
 		}
 
 		return returnWeights;
 	}
 
-	XMFLOAT4 GetBoneIndices()
+	XMUINT4 GetBoneIndices()
 	{
-		XMFLOAT4 returnIndices = { 0.0f,0.0f,0.0f,0.0f };
+		XMUINT4 returnIndices = { 0,0,0,0 };
 
 		for (int i = 0; i < jointIds.size(); i++)
 		{
 			if (i == 0)
-				returnIndices.w = jointIds[i];
-			if (i == 1)
 				returnIndices.x = jointIds[i];
-			if (i == 2)
+			if (i == 1)
 				returnIndices.y = jointIds[i];
-			if (i == 3)
+			if (i == 2)
 				returnIndices.z = jointIds[i];
+			if (i == 3)
+				returnIndices.w = jointIds[i];
 		}
 
 		return returnIndices;

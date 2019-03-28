@@ -257,7 +257,7 @@ float4 NormalPS(VS_OUTPUT_NORMAL input) : SV_Target
 
 	finalColour.a = surface.DiffuseMtrl.a;
 
-    return float4(input.NormW, 1.0f);
+    //return float4(input.NormW, 1.0f);
 
 	return finalColour;
 }

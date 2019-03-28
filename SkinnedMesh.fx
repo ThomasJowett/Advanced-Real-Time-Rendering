@@ -22,9 +22,8 @@ struct VS_INPUT
     float3 Tangent : TANGENT;
     float3 Normal : NORMAL;
     float2 Tex0 : TEXCOORD0;
-    float4 BlendIndices : BLENDINDICES;
     float4 BlendWeights : BLENDWEIGHT;
-    
+    uint4 BlendIndices : BLENDINDICES;
 };
 
 struct VS_OUTPUT
@@ -42,29 +41,28 @@ VS_OUTPUT SkinnedVS(VS_INPUT input)
     VS_OUTPUT output = (VS_OUTPUT) 0;
 
     // cast the vectors to arrays for use in the for loop below
-    int4 IndexVector = D3DCOLORtoUBYTE4(input.BlendIndices); // convert from float4 to int4
-    int IndexArray[4] = (int[4]) IndexVector; // then to an array
+    //int4 IndexVector = D3DCOLORtoUBYTE4(input.BlendIndices); // convert from float4 to int4
+    //int IndexArray[4] = (int[4]) IndexVector; // then to an array
     float BlendWeightsArray[4] = (float[4]) input.BlendWeights; // convert to array
 
     float3 Pos = float3(0.0f, 0.0f, 0.0f);
     float3 Normal = float3(0.0f, 0.0f, 0.0f);
     float3 Tangent = float3(0.0f, 0.0f, 0.0f);
 
-    float4 inputNormal = float4(input.Normal, 1.0f);
-    float4 inputTangent = float4(input.Tangent, 1.0f);
-
     for (int iBone = 0; iBone < 4; iBone++)
-    {	
-        Pos += mul(input.Pos, WorldMatrixArray[IndexArray[iBone] + 1]) * BlendWeightsArray[iBone];
-        Normal += mul(inputNormal, WorldMatrixArray[IndexArray[iBone] + 1]) * BlendWeightsArray[iBone];
-        Tangent += mul(inputTangent, WorldMatrixArray[IndexArray[iBone] + 1]) * BlendWeightsArray[iBone];
+    {
+        //Pos += mul(input.Pos, WorldMatrixArray[IndexArray[iBone]]) * BlendWeightsArray[iBone];
+        //Normal += mul(input.Normal, (float3x3) WorldMatrixArray[IndexArray[iBone]]) * BlendWeightsArray[iBone];
+        //Tangent += mul(input.Tangent, (float3x3) WorldMatrixArray[IndexArray[iBone]]) * BlendWeightsArray[iBone];
+
+        Pos += mul(input.Pos, WorldMatrixArray[input.BlendIndices[iBone]]) * BlendWeightsArray[iBone];
+        Normal += mul(input.Normal, (float3x3) WorldMatrixArray[input.BlendIndices[iBone]]) * BlendWeightsArray[iBone];
+        Tangent += mul(input.Tangent, (float3x3) WorldMatrixArray[input.BlendIndices[iBone]]) * BlendWeightsArray[iBone];
     }
     
-    Pos = input.Pos;
-    //Normal = input.Normal.rgb;
-    //Tangent = input.Tangent.rgb;
-
-    //Normal = input.BlendWeights;
+    //Pos = mul(input.Pos, WorldMatrixArray[2]);
+    //Normal = mul(input.Normal, (float3x3) WorldMatrixArray[2]);
+    //Tangent = mul(input.Tangent, (float3x3) WorldMatrixArray[2]);
 
     float4 posW = float4(Pos, 1.0f);
     output.PosW = posW.xyz;
@@ -78,8 +76,6 @@ VS_OUTPUT SkinnedVS(VS_INPUT input)
 
     output.ShadowPosH = mul(posW, ShadowTransform);
     output.Tex = input.Tex0;
-
-    output.NormW = float3(IndexArray[0], IndexArray[2], IndexArray[1]);
 
 	return output;
 }

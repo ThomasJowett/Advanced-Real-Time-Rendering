@@ -50,10 +50,10 @@ struct SkeletalVertex
 {
 	XMFLOAT3 PosL;
 	XMFLOAT3 Tangent;
-	XMFLOAT2 Tex;
 	XMFLOAT3 NormL;
-	XMFLOAT4 BoneIndices;
+	XMFLOAT2 Tex;
 	XMFLOAT4 Weights;
+	XMUINT4 BoneIndices;
 };
 
 struct SurfaceInfo
