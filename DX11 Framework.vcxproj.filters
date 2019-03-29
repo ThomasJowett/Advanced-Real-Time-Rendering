@@ -120,6 +120,7 @@
     <ClCompile Include="include\imGUI\imgui_demo.cpp">
       <Filter>IMGUI</Filter>
     </ClCompile>
+    <ClCompile Include="Animation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">

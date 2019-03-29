@@ -109,6 +109,8 @@ private:
 	ID3D11ShaderResourceView * _pNormalGroundTextureRV = nullptr;
 
 	ID3D11ShaderResourceView * _pVingetteTextureRV = nullptr;
+	ID3D11ShaderResourceView *_pDiffuseManTextureRV = nullptr;
+	ID3D11ShaderResourceView * _pNormalManTextureRV = nullptr;
 
 	ID3D11SamplerState * _pSamplerLinear = nullptr;
 	ID3D11SamplerState * _pSamplerShadow = nullptr;

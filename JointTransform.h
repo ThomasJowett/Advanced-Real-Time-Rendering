@@ -19,20 +19,26 @@ public:
 		_rotation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
 	}
 
-	XMMATRIX GetLocalTransform()
+	XMFLOAT4X4 GetLocalTransform()
 	{
 		XMMATRIX transform = XMMatrixIdentity();
 		XMMATRIX translation = XMMatrixTranslation(_position.x, _position.y, _position.z);
+
+		translation = XMMatrixTranspose(translation);
 		transform = translation * CalculateTransformMatrix(_rotation);
 
 		XMStoreFloat4x4(&_localTransform, transform);
-		return transform;
+		return _localTransform;
 	}
 
 	static JointTransform interpolate(JointTransform frameA, JointTransform frameB, float alpha)
 	{
+		//return (alpha < 0.5f) ? frameA : frameB;
+
 		Vector3D pos = Vector3D::Lerp(frameA._position, frameB._position, alpha);
-		Quaternion rot = Quaternion::Slerp(frameA._rotation, frameB._rotation, alpha);
+		Quaternion rot = Quaternion::Nlerp(frameA._rotation, frameB._rotation, alpha);
+
+		//rot.Normalize();
 
 		return JointTransform(pos, rot);
 	}

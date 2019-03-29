@@ -119,6 +119,44 @@ public:
 		(*this) = Quaternion(Vector3D(theta_Roll, theta_Pitch, theta_Yaw));
 	}
 
+	//from matrix
+	Quaternion(XMFLOAT4X4 matrix)
+	{
+		float diagonal = matrix(0, 0) + matrix(1, 1) + matrix(2, 2);
+		if (diagonal > 0)
+		{
+			float r4 = (float)(sqrt(diagonal + 1.0f) * 2.0f);
+			r = r4 / 4.0f;
+			i = matrix(2, 1) - matrix(1, 2) / r4;
+			j = matrix(0, 2) - matrix(2, 0) / r4;
+			k = matrix(1, 0) - matrix(0, 1) / r4;
+		}
+		else if (matrix(0, 0) > matrix(1, 1) && matrix(0, 0) > matrix(2, 2))
+		{
+			float i4 = (float)sqrt(1.0f + matrix(0, 0) - matrix(1, 1) - matrix(2, 2) * 2.0f);
+			r = (matrix(2, 1) - matrix(1, 2)) / i4;
+			i = i4 / 4.0f;
+			j = (matrix(0,1) + matrix(1,0)) / i4;
+			k = (matrix(0,2) + matrix(2,0)) / i4;
+		}
+		else if (matrix(1,1) > matrix(2,2)) {
+			float j4 = (float)(sqrt(1.0f + matrix(1,1) - matrix(0,0) - matrix(2,2)) * 2.0f);
+			r = (matrix(0,2) - matrix(2,0)) / j4;
+			i = (matrix(0,1) + matrix(1,0)) / j4;
+			j = j4 / 4.0f;					
+			k = (matrix(1,2) + matrix(2,1)) / j4;
+		}
+		else {
+			float k4 = (float)(sqrt(1.0f + matrix(2,2) - matrix(0,0) - matrix(1,1)) * 2.0f);
+			r = (matrix(1,0) - matrix(0,1)) / k4;
+			i = (matrix(0,2) + matrix(2,0)) / k4;
+			j = (matrix(1,2) + matrix(2,1)) / k4;
+			k = k4 / 4.0f;
+		}
+
+		//Normalize();
+	}
+
 	~Quaternion() {}
 
 	/**
@@ -184,7 +222,7 @@ public:
 	}
 
 	//Spherically interpolates between a and b
-	Quaternion static Slerp(Quaternion a, Quaternion b, double t)
+	Quaternion static Slerp(Quaternion a, Quaternion b, float t)
 	{
 		Quaternion result = Quaternion();
 
@@ -197,14 +235,14 @@ public:
 			result = a;
 			return result;
 		}
-
+		
 		//calculate temporary values
 		float halfTheta = acos(cosHalfTheta);
 		float sinHalfTheta = (float)sqrt(1.0 - cosHalfTheta * cosHalfTheta);
-
+		
 		//if theta = 180 degrees then result is not fully defined
 		//we could rotate around any axis normal to a or b
-
+		
 		if (fabs(sinHalfTheta) < 0.001)
 		{
 			result.r = (a.r * 0.5f + b.r * 0.5f);
@@ -213,15 +251,41 @@ public:
 			result.k = (a.k * 0.5f + b.k * 0.5f);
 			return result;
 		}
-
+		
 		float ratioA = (float)sin((1 - t)*halfTheta) / sinHalfTheta;
 		float ratioB = (float)sin(t *halfTheta) / sinHalfTheta;
-
+		
 		//calculate Quaternion
 		result.r = (a.r * ratioA + b.r * ratioB);
 		result.i = (a.i * ratioA + b.i * ratioB);
 		result.j = (a.j * ratioA + b.j * ratioB);
 		result.k = (a.k * ratioA + b.k * ratioB);
+
+		return result;
+	}
+
+	//Normally interpolates between a and b
+	Quaternion static Nlerp(Quaternion a, Quaternion b, float alpha)
+	{
+		Quaternion result = Quaternion();
+
+		float dot = Dot(a, b);
+
+		float oneMinusAlpha = 1.0f - alpha;
+
+		if (dot < 0) {
+			result.r = oneMinusAlpha * a.r + alpha * -b.r;
+			result.i = oneMinusAlpha * a.i + alpha * -b.i;
+			result.j = oneMinusAlpha * a.j + alpha * -b.j;
+			result.k = oneMinusAlpha * a.k + alpha * -b.k;
+		}
+		else {
+			result.r = oneMinusAlpha * a.r + alpha * b.r;
+			result.i = oneMinusAlpha * a.i + alpha * b.i;
+			result.j = oneMinusAlpha * a.j + alpha * b.j;
+			result.k = oneMinusAlpha * a.k + alpha * b.k;
+		}
+		result.Normalize();
 		return result;
 	}
 

@@ -13,9 +13,9 @@ namespace ColladaLoader
 
 	SkinningData LoadSkin(tinyxml2::XMLElement* node, int maxWeights);
 
-	SkeletonData LoadSkeleton(tinyxml2::XMLElement* node, std::vector<std::string> jointOrder);
+	SkeletonData LoadSkeleton(tinyxml2::XMLElement* node, std::vector<std::string> jointOrder, std::vector<XMFLOAT4X4> inverseBindTransforms);
 
-	JointData* LoadJointData(tinyxml2::XMLElement * node, bool isRoot, std::vector<std::string> jointOrder);
+	JointData* LoadJointData(tinyxml2::XMLElement * node, bool isRoot, std::vector<std::string> jointOrder, std::vector<XMFLOAT4X4> inverseBindTransforms);
 
 	IndexedSkeletalModel LoadGeometry(tinyxml2::XMLElement* node, std::vector<VertexSkinData> vertexSkinData);
 

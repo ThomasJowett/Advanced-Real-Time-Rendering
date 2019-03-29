@@ -17,6 +17,11 @@ AnimatedModel::AnimatedModel(AnimatedModelData modelData, ID3D11ShaderResourceVi
 	XMFLOAT4X4 identity;
 	XMStoreFloat4x4(&identity, XMMatrixIdentity());
 	_rootJoint->CalculateInverseBindTransform(identity);
+
+	_transform._rotation = Quaternion(-XM_PIDIV2 - 0.5f, XM_PI, 0.0f);
+	_transform._position.y = 100.0f;
+
+	_animationPlayRate = 0.8f;
 }
 
 AnimatedModel::~AnimatedModel()
@@ -33,6 +38,8 @@ void AnimatedModel::DoAnimation(Animation* animation)
 
 void AnimatedModel::Update(float deltaTime)
 {
+	_transform.UpdateWorldMatrix();
+
 	if (!_currentAnimation)
 	{
 		return;
@@ -40,8 +47,10 @@ void AnimatedModel::Update(float deltaTime)
 
 	IncreaseAnimationTime(deltaTime);
 
-	std::map<std::string, XMMATRIX> currentPos = CalculateCurrentAnimationPose();
-	ApplyPoseToJoints(currentPos, _rootJoint, XMMATRIX());
+	std::map<std::string, XMFLOAT4X4> currentPos = CalculateCurrentAnimationPose();
+	XMFLOAT4X4 identity;
+	XMStoreFloat4x4(&identity, XMMatrixIdentity());
+	ApplyPoseToJoints(currentPos, _rootJoint, identity);
 }
 
 void AnimatedModel::GetJointTransforms(XMMATRIX* jointMatrices)
@@ -59,15 +68,15 @@ void AnimatedModel::Draw(ID3D11DeviceContext * pImmediateContext)
 
 void AnimatedModel::IncreaseAnimationTime(float deltaTime)
 {
-	_animationTime += deltaTime;
+	_animationTime += deltaTime * _animationPlayRate;
 
 	if (_animationTime > _currentAnimation->GetLength())
 	{
-		_animationTime = _currentAnimation->GetLength();
+		_animationTime = 0.0f;
 	}
 }
 
-std::map<std::string, XMMATRIX> AnimatedModel::CalculateCurrentAnimationPose()
+std::map<std::string, XMFLOAT4X4> AnimatedModel::CalculateCurrentAnimationPose()
 {
 	KeyFrame previousFrame, nextFrame;
 
@@ -78,19 +87,22 @@ std::map<std::string, XMMATRIX> AnimatedModel::CalculateCurrentAnimationPose()
 	return InterpolatePoses(previousFrame, nextFrame, progression);
 }
 
-void AnimatedModel::ApplyPoseToJoints(std::map<std::string, XMMATRIX> currentPose, Joint* joint, XMMATRIX parentTransform)
+void AnimatedModel::ApplyPoseToJoints(std::map<std::string, XMFLOAT4X4> currentPose, Joint* joint, XMFLOAT4X4 parentTransform)
 {
-	XMMATRIX currentLocalTransform = currentPose.at(joint->_name);
-	XMMATRIX currentTransform = XMMatrixMultiply(parentTransform, currentLocalTransform);
+	XMFLOAT4X4 currentLocalTransform = currentPose.at(joint->_name);
+	XMMATRIX currentTransform = XMMatrixMultiply(XMLoadFloat4x4(&parentTransform), XMLoadFloat4x4(&currentLocalTransform));
+
+	XMFLOAT4X4 currentTransformAsFloats;
+
+	
 
 	for (Joint* childJoint : joint->_children)
 	{
-		ApplyPoseToJoints(currentPose, childJoint, currentTransform);
+		XMStoreFloat4x4(&currentTransformAsFloats, currentTransform);
+		ApplyPoseToJoints(currentPose, childJoint, currentTransformAsFloats);
 	}
 
 	currentTransform = XMMatrixMultiply(currentTransform, XMLoadFloat4x4(&joint->GetInverseBindTransform()));
-
-	XMFLOAT4X4 currentTransformAsFloats;
 
 	XMStoreFloat4x4(&currentTransformAsFloats, currentTransform);
 
@@ -120,9 +132,9 @@ float AnimatedModel::CalculateProgression(KeyFrame previousFrame, KeyFrame nextF
 	return currentTime / totalTime;
 }
 
-std::map<std::string, XMMATRIX> AnimatedModel::InterpolatePoses(KeyFrame previousFrame, KeyFrame nextFrame, float progression)
+std::map<std::string, XMFLOAT4X4> AnimatedModel::InterpolatePoses(KeyFrame previousFrame, KeyFrame nextFrame, float progression)
 {
-	std::map<std::string, XMMATRIX> currentPose;
+	std::map<std::string, XMFLOAT4X4> currentPose;
 	for (auto jointName : previousFrame.GetJointKeyFrames())
 	{
 		JointTransform previousTransform = previousFrame.GetJointKeyFrames().at(jointName.first);
@@ -135,7 +147,7 @@ std::map<std::string, XMMATRIX> AnimatedModel::InterpolatePoses(KeyFrame previou
 
 void AnimatedModel::AddJointsToArray(Joint * rootJoint, XMMATRIX * jointMatrices)
 {
-	jointMatrices[rootJoint->_index] = _currentAnimation ? XMLoadFloat4x4(&rootJoint->GetAnimatedTransform()) : XMMatrixIdentity();
+	jointMatrices[rootJoint->_index] = _transform.GetWorldMatrix() * (_currentAnimation ? XMLoadFloat4x4(&rootJoint->GetAnimatedTransform()) : XMMatrixIdentity());//XMLoadFloat4x4(&rootJoint->GetInverseBindTransform()));
 	for (Joint* childJoint : rootJoint->_children)
 	{
 		AddJointsToArray(childJoint, jointMatrices);
@@ -144,7 +156,7 @@ void AnimatedModel::AddJointsToArray(Joint * rootJoint, XMMATRIX * jointMatrices
 
 Joint * AnimatedModel::CreateJoints(JointData data)
 {
-	Joint* joint = new Joint(data.index, data.nameID, data.bindLocalTransform);
+	Joint* joint = new Joint(data.index, data.nameID, data.bindLocalTransform, data.inverseBindTransform);
 
 	for (JointData* child : data.children)
 	{

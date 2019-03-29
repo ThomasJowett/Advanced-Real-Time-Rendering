@@ -24,6 +24,10 @@ private:
 	Animation* _currentAnimation = nullptr;
 	float _animationTime = 0;
 
+	float _animationPlayRate;
+
+	Transform _transform;
+
 public:
 	AnimatedModel(AnimatedModelData modelData, ID3D11ShaderResourceView* textureRV, ID3D11Device * d3dDevice);
 	~AnimatedModel();
@@ -39,19 +43,21 @@ public:
 	ID3D11ShaderResourceView *GetTextureRV() { return _textureRV; }
 
 	Material GetMaterial() { return _material; }
+
+	Transform* GetTransform() { return &_transform; }
 private:
 
 	void IncreaseAnimationTime(float deltaTime);
 
-	std::map<std::string, XMMATRIX> CalculateCurrentAnimationPose();
+	std::map<std::string, XMFLOAT4X4> CalculateCurrentAnimationPose();
 
-	void ApplyPoseToJoints(std::map<std::string, XMMATRIX> currentPose, Joint* joint, XMMATRIX parentTransform);
+	void ApplyPoseToJoints(std::map<std::string, XMFLOAT4X4> currentPose, Joint* joint, XMFLOAT4X4 parentTransform);
 
 	void GetPreviousAndNextFrames(KeyFrame &previousFrame, KeyFrame &nextFrame);
 
 	float CalculateProgression(KeyFrame previousFrame, KeyFrame nextFrame);
 
-	std::map<std::string, XMMATRIX> InterpolatePoses(KeyFrame previousFrame, KeyFrame NextFrame, float progression);
+	std::map<std::string, XMFLOAT4X4> InterpolatePoses(KeyFrame previousFrame, KeyFrame NextFrame, float progression);
 
 	void AddJointsToArray(Joint* rootJoint, XMMATRIX* jointMatrices);
 

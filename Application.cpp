@@ -184,8 +184,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	ID3D11ShaderResourceView * _pNormalSpaceManTextureRV;
 	ID3D11ShaderResourceView *_pDiffuseSpaceManTextureRV;
 
-	ID3D11ShaderResourceView * _pNormalManTextureRV;
-	ID3D11ShaderResourceView *_pDiffuseManTextureRV;
+	
 
 	ID3D11ShaderResourceView * _pNormalCrateTextureRV;
 	ID3D11ShaderResourceView *_pDiffuseCrateTextureRV;
@@ -203,6 +202,8 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	AnimatedModelData modelData = ColladaLoader::LoadModel("Resources/model.dae", 4);
 
 	AnimationData animationData = ColladaLoader::LoadAnimation("Resources/model.dae");
+
+	Animation* animation = new Animation(animationData);
 
 	Mesh SpaceManGeometry(modelData.ToIndexedModel(), _pd3dDevice);
 
@@ -289,7 +290,10 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 
 	//_terrain.Init(_pd3dDevice, _pImmediateContext, tii);
 
+
 	_character = new AnimatedModel(modelData, _pDiffuseManTextureRV, _pd3dDevice);
+
+	_character->DoAnimation(animation);
 
 	_fullscreenQuad = new Mesh(GeometryGenerator::CreateFullScreenQuad(), _pd3dDevice);
 
@@ -1317,6 +1321,8 @@ void Application::Update(float deltaTime)
 		_camera->SetPosition(Vector3D(_camera->GetPosition().x, _terrain.GetHeight(_camera->GetPosition().x, _camera->GetPosition().z) + 2.0f, _camera->GetPosition().z));
 	_camera->Update();
 
+	_character->GetTransform()->_position.y = _terrain.GetHeight(_character->GetTransform()->_position.x, _character->GetTransform()->_position.z);
+	_character->GetTransform()->_position.y = 1000.0f;
 	_character->Update(deltaTime);
 
 	// Update objects
@@ -1469,7 +1475,7 @@ void Application::Draw()
 
 	textureRV = _character->GetTextureRV();
 	_pImmediateContext->PSSetShaderResources(0, 1, &textureRV);
-	textureRV = _pNormalStoneTextureRV;
+	textureRV = _pNormalManTextureRV;
 	_pImmediateContext->PSSetShaderResources(1, 1, &textureRV);
 
 	_character->Draw(_pImmediateContext);

@@ -3,14 +3,21 @@
 #include <DirectXMath.h>
 #include <vector>
 #include "Vector.h"
+#include <map>
+#include "Commons.h"
 
 using namespace DirectX;
+
+//--------------------------------------------------------------
+//File containing all all data types for loading collada format
+//--------------------------------------------------------------
 
 struct JointData
 {
 	int index;
 	std::string nameID;
 	XMFLOAT4X4 bindLocalTransform;
+	XMFLOAT4X4 inverseBindTransform;
 
 	std::vector<JointData*> children;
 
@@ -147,9 +154,10 @@ struct SkinningData
 {
 	std::vector<std::string> jointOrder;
 	std::vector<VertexSkinData> verticesSkinData;
+	std::vector<XMFLOAT4X4> bindMatrices;
 
-	SkinningData(std::vector<std::string> jointOrder, std::vector<VertexSkinData> verticesSkinData)
-		:jointOrder(jointOrder), verticesSkinData(verticesSkinData) {}
+	SkinningData(std::vector<std::string> jointOrder, std::vector<VertexSkinData> verticesSkinData, std::vector<XMFLOAT4X4> bindMatrices)
+		:jointOrder(jointOrder), verticesSkinData(verticesSkinData), bindMatrices(bindMatrices){}
 };
 
 struct VertexData
@@ -241,16 +249,10 @@ struct AnimatedModelData
 	}
 };
 
-struct JointTransformData
-{
-	std::string jointNameId;
-	XMMATRIX jointLocalTransform;
-};
-
 struct KeyFrameData
 {
 	float time;
-	std::vector<JointTransformData> jointTransforms;
+	std::map<std::string, XMFLOAT4X4> jointTransforms;
 };
 
 struct AnimationData

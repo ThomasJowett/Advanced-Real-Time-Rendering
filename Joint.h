@@ -23,8 +23,11 @@ public:
 	Joint(int index, std::string name, XMFLOAT4X4 bindLocalTransform)
 		:_index(index), _name(name), _localBindTransform(bindLocalTransform)
 	{
-		//_localBindTransform = XMMatrixIdentity();
-		//_animatedTransform = XMMatrixIdentity();
+	}
+
+	Joint(int index, std::string name, XMFLOAT4X4 bindLocalTransform, XMFLOAT4X4 inverseBindTransform)
+		:_index(index), _name(name), _localBindTransform(bindLocalTransform), _inverseBindTransform(inverseBindTransform)
+	{
 	}
 
 	~Joint()

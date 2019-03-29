@@ -17,7 +17,7 @@ AnimatedModelData ColladaLoader::LoadModel(const char * filename, int maxWeights
 			SkinningData skinningData = LoadSkin(pNode, maxWeights);
 
 			pNode = pRoot->FirstChildElement("library_visual_scenes");
-			SkeletonData skeletonData = LoadSkeleton(pNode, skinningData.jointOrder);
+			SkeletonData skeletonData = LoadSkeleton(pNode, skinningData.jointOrder, skinningData.bindMatrices);
 
 			pNode = pRoot->FirstChildElement("library_geometries");
 			IndexedSkeletalModel meshData = LoadGeometry(pNode, skinningData.verticesSkinData);
@@ -32,6 +32,9 @@ AnimatedModelData ColladaLoader::LoadModel(const char * filename, int maxWeights
 AnimationData ColladaLoader::LoadAnimation(const char * filename)
 {
 	AnimationData returnAnimationData;
+
+	std::vector<KeyFrameData> keyFramesData;
+	std::vector<float> keyFrameTimes;
 
 	tinyxml2::XMLDocument doc;
 
@@ -74,6 +77,12 @@ AnimationData ColladaLoader::LoadAnimation(const char * filename)
 
 				tinyxml2::XMLElement* pInput = pSampler->FirstChildElement("input");
 
+				//get joint name
+				tinyxml2::XMLElement* pChannel = pAnimation->FirstChildElement("channel");
+
+				std::string jointName = Util::SplitString(pChannel->Attribute("target"), '/')[0];
+
+				//get input and output IDs
 				while (pInput)
 				{
 					if (strcmp(pInput->Attribute("semantic"), "INPUT") == 0)
@@ -81,24 +90,76 @@ AnimationData ColladaLoader::LoadAnimation(const char * filename)
 						inputID = pInput->Attribute("source");
 						inputID.erase(inputID.begin());
 					}
-					else if(strcmp(pInput->Attribute("semantic"), "OUPUT") == 0)
+					else if(strcmp(pInput->Attribute("semantic"), "OUTPUT") == 0)
 					{
 						outputID = pInput->Attribute("source");
 						outputID.erase(outputID.begin());
 					}
+
 					pInput = pInput->NextSiblingElement("input");
 				}
 
+				std::vector<std::string> rawtimesData;
+				std::vector<std::string> rawMatricesData;
+
 				tinyxml2::XMLElement* pSource = pAnimation->FirstChildElement("source");
 
+				while (pSource)
+				{
+					if (strcmp(pSource->Attribute("id"), inputID.c_str()) == 0)
+					{
+						rawtimesData = Util::SplitString(pSource->FirstChildElement("float_array")->GetText(), ' ');
+					}
+					else if (strcmp(pSource->Attribute("id"), outputID.c_str()) == 0)
+					{
+						rawMatricesData = Util::SplitString(pSource->FirstChildElement("float_array")->GetText(), ' ');
+					}
+					pSource = pSource->NextSiblingElement("source");
 
+				}
+
+				//if this is the root bone then load the keyframe times
+				if (strcmp(jointName.c_str(), rootJointName.c_str()) == 0)
+				{
+					for (std::string time : rawtimesData)
+					{
+						keyFrameTimes.push_back(atof(time.c_str()));
+					}
+
+					returnAnimationData.lengthSeconds = keyFrameTimes.back();
+
+					keyFramesData.resize(keyFrameTimes.size());
+
+					for (int i = 0; i< keyFramesData.size(); i++)
+					{
+						keyFramesData[i].time = keyFrameTimes[i];
+					}
+				}
+
+
+				for (int i = 0; i < keyFramesData.size(); i++)
+				{
+					
+					//convert the raw data into a matrix
+					XMMATRIX matrix = XMMATRIX(atof(rawMatricesData[i * 16 + 0].c_str()), atof(rawMatricesData[i * 16 + 1].c_str()), atof(rawMatricesData[i * 16 + 2].c_str()), atof(rawMatricesData[i * 16 + 3].c_str()),
+						atof(rawMatricesData[i * 16 + 4].c_str()), atof(rawMatricesData[i * 16 + 5].c_str()), atof(rawMatricesData[i * 16 + 6].c_str()), atof(rawMatricesData[i * 16 + 7].c_str()),
+						atof(rawMatricesData[i * 16 + 8].c_str()), atof(rawMatricesData[i * 16 + 9].c_str()), atof(rawMatricesData[i * 16 + 10].c_str()), atof(rawMatricesData[i * 16 + 11].c_str()),
+						atof(rawMatricesData[i * 16 + 12].c_str()), atof(rawMatricesData[i * 16 + 13].c_str()), atof(rawMatricesData[i * 16 + 14].c_str()), atof(rawMatricesData[i * 16 + 15].c_str()));
+
+					XMFLOAT4X4 matrixAsFloats;
+
+					XMStoreFloat4x4(&matrixAsFloats, matrix);
+
+					keyFramesData[i].jointTransforms.insert(std::pair<std::string, XMFLOAT4X4> (jointName, matrixAsFloats));
+				}
 
 				pAnimation = pAnimation->NextSiblingElement("animation");
 			}
-			//TODO: load animation data
+			
 		}
 	}
 
+	returnAnimationData.keyframes = keyFramesData;
 	return returnAnimationData;
 }
 
@@ -106,6 +167,25 @@ SkinningData ColladaLoader::LoadSkin(tinyxml2::XMLElement * node, int maxWeights
 {
 	//find the skin node
 	tinyxml2::XMLElement * pSkinNode = node->FirstChildElement("controller")->FirstChildElement("skin");
+
+	tinyxml2::XMLElement * pJointsNode = pSkinNode->FirstChildElement("joints");
+
+	tinyxml2::XMLElement * pInputNode = pJointsNode->FirstChildElement("input");
+
+	std::string inverseBindId;
+
+	while (pInputNode)
+	{
+		if (strcmp(pInputNode->Attribute("semantic"), "INV_BIND_MATRIX") == 0)
+		{
+			inverseBindId = pInputNode->Attribute("source");
+			inverseBindId.erase(inverseBindId.begin());
+		}
+
+		pInputNode = pInputNode->NextSiblingElement("input");
+	}
+
+
 
 	//find the vertex weights node
 	tinyxml2::XMLElement * pVertexWeightsNode = pSkinNode->FirstChildElement("vertex_weights");
@@ -116,8 +196,9 @@ SkinningData ColladaLoader::LoadSkin(tinyxml2::XMLElement * node, int maxWeights
 	std::vector<float> weights;
 	std::vector<int> effectorJointCounts;
 	std::vector<VertexSkinData> vertexWeights;
+	std::vector<XMFLOAT4X4> bindMatrices;
 
-	tinyxml2::XMLElement * pInputNode = pVertexWeightsNode->FirstChildElement("input");
+	pInputNode = pVertexWeightsNode->FirstChildElement("input");
 
 	//get the data IDs
 	while (pInputNode)
@@ -146,6 +227,22 @@ SkinningData ColladaLoader::LoadSkin(tinyxml2::XMLElement * node, int maxWeights
 		if (strcmp(pSourceNode->Attribute("id"), jointDataId.c_str()) == 0)
 		{
 			jointNames = Util::SplitString(pSourceNode->FirstChildElement("Name_array")->GetText(), ' ');
+		}
+		else if (strcmp(pSourceNode->Attribute("id"), inverseBindId.c_str()) == 0)
+		{
+			std::vector<std::string> rawData = Util::SplitString(pSourceNode->FirstChildElement("float_array")->GetText(), ' ');
+
+			int boneCount = atoi(pSourceNode->FirstChildElement("technique_common")->FirstChildElement("accessor")->Attribute("count"));
+
+			
+
+			for (int i = 0; i < boneCount; i++)
+			{
+				bindMatrices.push_back(XMFLOAT4X4(atof(rawData[i * 16 + 0].c_str()), atof(rawData[i * 16 + 1].c_str()), atof(rawData[i * 16 + 2].c_str()), atof(rawData[i * 16 + 3].c_str()),
+					atof(rawData[i * 16 + 4].c_str()), atof(rawData[i * 16 + 5].c_str()), atof(rawData[i * 16 + 6].c_str()), atof(rawData[i * 16 + 7].c_str()),
+					atof(rawData[i * 16 + 8].c_str()), atof(rawData[i * 16 + 9].c_str()), atof(rawData[i * 16 + 10].c_str()), atof(rawData[i * 16 + 11].c_str()),
+					atof(rawData[i * 16 + 12].c_str()), atof(rawData[i * 16 + 13].c_str()), atof(rawData[i * 16 + 14].c_str()), atof(rawData[i * 16 + 15].c_str())));
+			}
 		}
 		else if (strcmp(pSourceNode->Attribute("id"), weightDataId.c_str()) == 0)
 		{
@@ -184,10 +281,10 @@ SkinningData ColladaLoader::LoadSkin(tinyxml2::XMLElement * node, int maxWeights
 		vertexWeights.push_back(skinData);
 	}
 
-	return SkinningData(jointNames, vertexWeights);
+	return SkinningData(jointNames, vertexWeights, bindMatrices);
 }
 
-SkeletonData ColladaLoader::LoadSkeleton(tinyxml2::XMLElement * node, std::vector<std::string> jointOrder)
+SkeletonData ColladaLoader::LoadSkeleton(tinyxml2::XMLElement * node, std::vector<std::string> jointOrder, std::vector<XMFLOAT4X4> inverseBindTransforms)
 {
 	tinyxml2::XMLElement * pVisualSceneNode = node->FirstChildElement("visual_scene");
 
@@ -204,12 +301,12 @@ SkeletonData ColladaLoader::LoadSkeleton(tinyxml2::XMLElement * node, std::vecto
 	}
 	tinyxml2::XMLElement * pHeadNode = pArmatureNode->FirstChildElement("node");
 
-	JointData* rootJoint = LoadJointData(pHeadNode, true, jointOrder);
+	JointData* rootJoint = LoadJointData(pHeadNode, true, jointOrder, inverseBindTransforms);
 
 	return SkeletonData(jointOrder.size(), *rootJoint);
 }
 
-JointData* ColladaLoader::LoadJointData(tinyxml2::XMLElement * node, bool isRoot, std::vector<std::string> jointOrder)
+JointData* ColladaLoader::LoadJointData(tinyxml2::XMLElement * node, bool isRoot, std::vector<std::string> jointOrder, std::vector<XMFLOAT4X4> inverseBindTransforms)
 {
 	std::string nameId = node->Attribute("id");
 	auto it = std::find(jointOrder.begin(), jointOrder.end(), nameId);
@@ -224,7 +321,7 @@ JointData* ColladaLoader::LoadJointData(tinyxml2::XMLElement * node, bool isRoot
 		atof(matrixRawData[8].c_str()), atof(matrixRawData[9].c_str()), atof(matrixRawData[10].c_str()), atof(matrixRawData[11].c_str()),
 		atof(matrixRawData[12].c_str()), atof(matrixRawData[13].c_str()), atof(matrixRawData[14].c_str()), atof(matrixRawData[15].c_str()));
 
-	XMMatrixTranspose(matrix);
+	//XMMatrixTranspose(matrix);
 	if (isRoot)
 	{
 		//rotate the root bone so that it is facing upwards
@@ -235,11 +332,12 @@ JointData* ColladaLoader::LoadJointData(tinyxml2::XMLElement * node, bool isRoot
 	XMStoreFloat4x4(&matrixAsFloats, matrix);
 	JointData* joint = new JointData(index, nameId, matrixAsFloats);
 
+	joint->inverseBindTransform = inverseBindTransforms[index];
 
 	tinyxml2::XMLElement * childNode = node->FirstChildElement("node");
 	while (childNode)
 	{
-		joint->AddChild(LoadJointData(childNode, false, jointOrder));
+		joint->AddChild(LoadJointData(childNode, false, jointOrder, inverseBindTransforms));
 		childNode = childNode->NextSiblingElement("node");
 	}
 
