@@ -146,9 +146,15 @@ AnimationData ColladaLoader::LoadAnimation(const char * filename)
 						atof(rawMatricesData[i * 16 + 8].c_str()), atof(rawMatricesData[i * 16 + 9].c_str()), atof(rawMatricesData[i * 16 + 10].c_str()), atof(rawMatricesData[i * 16 + 11].c_str()),
 						atof(rawMatricesData[i * 16 + 12].c_str()), atof(rawMatricesData[i * 16 + 13].c_str()), atof(rawMatricesData[i * 16 + 14].c_str()), atof(rawMatricesData[i * 16 + 15].c_str()));
 
+				
 					XMFLOAT4X4 matrixAsFloats;
-
 					XMStoreFloat4x4(&matrixAsFloats, matrix);
+
+					//Quaternion qat = Quaternion(matrixAsFloats);
+					//
+					//qat.Normalize();
+					//
+					//XMStoreFloat4x4(&matrixAsFloats, CalculateTransformMatrix(qat));
 
 					keyFramesData[i].jointTransforms.insert(std::pair<std::string, XMFLOAT4X4> (jointName, matrixAsFloats));
 				}

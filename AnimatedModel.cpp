@@ -19,7 +19,6 @@ AnimatedModel::AnimatedModel(AnimatedModelData modelData, ID3D11ShaderResourceVi
 	_rootJoint->CalculateInverseBindTransform(identity);
 
 	_transform._rotation = Quaternion(-XM_PIDIV2 - 0.5f, XM_PI, 0.0f);
-	_transform._position.y = 100.0f;
 
 	_animationPlayRate = 0.8f;
 }
@@ -147,7 +146,7 @@ std::map<std::string, XMFLOAT4X4> AnimatedModel::InterpolatePoses(KeyFrame previ
 
 void AnimatedModel::AddJointsToArray(Joint * rootJoint, XMMATRIX * jointMatrices)
 {
-	jointMatrices[rootJoint->_index] = _transform.GetWorldMatrix() * (_currentAnimation ? XMLoadFloat4x4(&rootJoint->GetAnimatedTransform()) : XMMatrixIdentity());//XMLoadFloat4x4(&rootJoint->GetInverseBindTransform()));
+	jointMatrices[rootJoint->_index] = XMMatrixTranspose(_transform.GetWorldMatrix()) * (_currentAnimation ? XMLoadFloat4x4(&rootJoint->GetAnimatedTransform()) : XMMatrixIdentity());
 	for (Joint* childJoint : rootJoint->_children)
 	{
 		AddJointsToArray(childJoint, jointMatrices);

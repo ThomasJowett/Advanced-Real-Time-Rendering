@@ -288,7 +288,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	tii.HeightMapHeight = 2049;
 	tii.CellSpacing = 0.5f;
 
-	//_terrain.Init(_pd3dDevice, _pImmediateContext, tii);
+	_terrain.Init(_pd3dDevice, _pImmediateContext, tii);
 
 
 	_character = new AnimatedModel(modelData, _pDiffuseManTextureRV, _pd3dDevice);
@@ -1076,9 +1076,31 @@ void Application::DrawSceneToShadowMap()
 	_pImmediateContext->VSSetSamplers(0, 1, &_pSamplerLinear);
 	_pImmediateContext->DSSetSamplers(0, 1, &_pSamplerLinear);
 
-	//_terrain.DrawToShadowMap(_pImmediateContext, cb, _camera);
+	_terrain.DrawToShadowMap(_pImmediateContext, cb, _camera);
+
+	//Render animated Model -----------------------------------------------------------
+
+	_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	_pImmediateContext->IASetInputLayout(_pSkinnedLayout);
+	_pImmediateContext->VSSetShader(_pSkinnedVertexShader, nullptr, 0);
+
+	SkinnedConstantBuffer skinCb;
+
+	skinCb.ViewProjection = XMMatrixTranspose(XMMatrixMultiply(view, projection));
+
+	XMMATRIX* boneMatrices = reinterpret_cast<XMMATRIX*>(skinCb.WorldMatrixArray);
+
+	_character->GetJointTransforms(boneMatrices);
+
+	skinCb.ViewProjection = XMMatrixTranspose(XMMatrixMultiply(view, projection));
+
+	_pImmediateContext->UpdateSubresource(_pSkinnedConstantBuffer, 0, nullptr, &skinCb, 0, 0);
+
+	_character->Draw(_pImmediateContext);
 
 	//Render All Other Objects ---------------------------------------------------------
+
 
 	_pImmediateContext->IASetInputLayout(_pVertexLayout);
 
@@ -1322,7 +1344,6 @@ void Application::Update(float deltaTime)
 	_camera->Update();
 
 	_character->GetTransform()->_position.y = _terrain.GetHeight(_character->GetTransform()->_position.x, _character->GetTransform()->_position.z);
-	_character->GetTransform()->_position.y = 1000.0f;
 	_character->Update(deltaTime);
 
 	// Update objects
@@ -1413,7 +1434,7 @@ void Application::Draw()
 	textureRV = _pShadowMap->GetShaderResourceView();
 	_pImmediateContext->PSSetShaderResources(7, 1, &textureRV);
 
-	//_terrain.Draw(_pImmediateContext, basicLight, _camera, _pShadowMap);
+	_terrain.Draw(_pImmediateContext, basicLight, _camera, _pShadowMap);
 
 	_pImmediateContext->PSSetShaderResources(7, 1, null);
 

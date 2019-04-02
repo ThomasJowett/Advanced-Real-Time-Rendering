@@ -33,7 +33,7 @@ public:
 
 	static JointTransform interpolate(JointTransform frameA, JointTransform frameB, float alpha)
 	{
-		//return (alpha < 0.5f) ? frameA : frameB;
+		return (alpha < 0.5f) ? frameA : frameB;
 
 		Vector3D pos = Vector3D::Lerp(frameA._position, frameB._position, alpha);
 		Quaternion rot = Quaternion::Nlerp(frameA._rotation, frameB._rotation, alpha);
