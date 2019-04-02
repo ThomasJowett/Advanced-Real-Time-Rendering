@@ -48,7 +48,7 @@ private:
 	void CalcPatchBoundsY(UINT i, UINT j);
 	void BuildQuadPatchVB(ID3D11Device* device);
 	void BuildQuadPatchIB(ID3D11Device* device);
-	void BuildHeightMapSRV(ID3D11Device* device);
+	void BuildHeightMapSRV(ID3D11Device* device, std::vector<float> heightMap);
 
 private:
 	static const int CellsPerPatch = 64;

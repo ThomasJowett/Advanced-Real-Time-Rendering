@@ -81,7 +81,7 @@ void Terrain::Init(ID3D11Device * device, ID3D11DeviceContext * deviceContext, c
 
 	BuildQuadPatchVB(device);
 	BuildQuadPatchIB(device);
-	BuildHeightMapSRV(device);
+	BuildHeightMapSRV(device, _heightMap);
 
 	CreateDDSTextureFromFile(device, _info.LayerMapFilename0.c_str(), nullptr, &_layer0SRV);
 	CreateDDSTextureFromFile(device, _info.LayerMapFilename1.c_str(), nullptr, &_layer1SRV);
@@ -408,7 +408,7 @@ void Terrain::BuildQuadPatchIB(ID3D11Device * device)
 	device->CreateBuffer(&ibd, &iinitData, &_quadPatchIndexBuffer);
 }
 
-void Terrain::BuildHeightMapSRV(ID3D11Device * device)
+void Terrain::BuildHeightMapSRV(ID3D11Device * device, std::vector<float> heightMap)
 {
 	D3D11_TEXTURE2D_DESC texDesc;
 	texDesc.Width = _info.HeightMapWidth;
@@ -424,8 +424,8 @@ void Terrain::BuildHeightMapSRV(ID3D11Device * device)
 	texDesc.MiscFlags = 0;
 
 	// HALF is defined in DirectXPackedVector.h, for storing 16-bit float.
-	std::vector<PackedVector::HALF> hmap(_heightMap.size());
-	std::transform(_heightMap.begin(), _heightMap.end(), hmap.begin(), PackedVector::XMConvertFloatToHalf);
+	std::vector<PackedVector::HALF> hmap(heightMap.size());
+	std::transform(heightMap.begin(), heightMap.end(), hmap.begin(), PackedVector::XMConvertFloatToHalf);
 
 	D3D11_SUBRESOURCE_DATA data;
 	data.pSysMem = &hmap[0];
