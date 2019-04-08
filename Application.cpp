@@ -5,6 +5,7 @@
 #include "PostProcess.h"
 #include <iostream>
 #include "ColladaLoader.h"
+#include "ProceduralLandscape.h"
 
 #include "imGUI/imgui.h"
 #include "imGUI/imgui_impl_dx11.h"
@@ -288,7 +289,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	tii.HeightMapHeight = 2049;
 	tii.CellSpacing = 0.5f;
 
-	_terrain.Init(_pd3dDevice, _pImmediateContext, tii);
+	_terrain.Init(_pd3dDevice, _pImmediateContext, tii, ProceduralLandscape::DiamondSquare(tii));
 
 
 	_character = new AnimatedModel(modelData, _pDiffuseManTextureRV, _pd3dDevice);
@@ -1188,14 +1189,14 @@ void Application::DrawImGui()
 	ImGui::NewFrame();
 
 	//Createtestwindow
-	ImGui::Begin("Test");
-	ImGui::Text("%i", _lastCursorPosX);
-	ImGui::End();
+	//ImGui::Begin("Test");
+	//ImGui::Text("%i", _lastCursorPosX);
+	//ImGui::End();
 
 	_mouseRawX = 0.0f;
 	_mouseRawY = 0.0f;
 
-	ImGui::ShowDemoWindow();
+	//ImGui::ShowDemoWindow();
 
 	//Assemble together Draw data
 	ImGui::Render();

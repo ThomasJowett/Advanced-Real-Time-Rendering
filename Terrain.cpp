@@ -65,8 +65,9 @@ void Terrain::SetWorld(CXMMATRIX M)
 	XMStoreFloat4x4(&_world, M);
 }
 
-void Terrain::Init(ID3D11Device * device, ID3D11DeviceContext * deviceContext, const InitInfo & initInfo)
+void Terrain::Init(ID3D11Device * device, ID3D11DeviceContext * deviceContext, const InitInfo & initInfo, std::vector<float> heightmapData)
 {
+	_heightMap = heightmapData;
 	_info = initInfo;
 
 	_numPatchVertRows = ((_info.HeightMapHeight - 1) / CellsPerPatch) + 1;
@@ -75,7 +76,6 @@ void Terrain::Init(ID3D11Device * device, ID3D11DeviceContext * deviceContext, c
 	_numPatchVertices = _numPatchVertRows * _numPatchVertCols;
 	_numPatchQuadFaces = (_numPatchVertRows - 1)*(_numPatchVertCols - 1);
 
-	LoadHeightMap();
 	Smooth();
 	CalcAllPatchBoundsY();
 
@@ -198,32 +198,6 @@ void Terrain::DrawToShadowMap(ID3D11DeviceContext * deviceContext, ShadowMapCons
 	deviceContext->IASetIndexBuffer(_quadPatchIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 
 	deviceContext->DrawIndexed(_numPatchQuadFaces * 4, 0, 0);
-}
-
-void Terrain::LoadHeightMap()
-{
-	//A height for each vertex
-	std::vector<unsigned char> in(_info.HeightMapWidth * _info.HeightMapHeight);
-
-	//open the file
-	std::ifstream inFile;
-	inFile.open(_info.HeightMapFilename, std::ios_base::binary);
-
-	if (inFile)
-	{
-		//Read the Raw bytes
-		inFile.read((char*)&in[0], (std::streamsize)in.size());
-
-		inFile.close();
-	}
-
-	//Copy the array data into a float array and scale it.
-	_heightMap.resize(_info.HeightMapHeight * _info.HeightMapWidth, 0);
-
-	for (unsigned int i = 0; i < _info.HeightMapHeight * _info.HeightMapWidth; ++i)
-	{
-		_heightMap[i] = (in[i] / 255.0f) * _info.HeightScale;
-	}
 }
 
 void Terrain::Smooth()

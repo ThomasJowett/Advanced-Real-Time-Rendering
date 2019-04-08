@@ -98,8 +98,6 @@
     <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="Utilities.cpp" />
     <ClCompile Include="ProceduralLandscape.cpp" />
-    <ClCompile Include="Joint.cpp" />
-    <ClCompile Include="AnimatedModel.cpp" />
     <ClCompile Include="TinyXML2.cpp" />
     <ClCompile Include="ColladaLoader.cpp" />
     <ClCompile Include="include\imGUI\imgui.cpp">
@@ -120,7 +118,15 @@
     <ClCompile Include="include\imGUI\imgui_demo.cpp">
       <Filter>IMGUI</Filter>
     </ClCompile>
-    <ClCompile Include="Animation.cpp" />
+    <ClCompile Include="Joint.cpp">
+      <Filter>SkeletalAnimation</Filter>
+    </ClCompile>
+    <ClCompile Include="AnimatedModel.cpp">
+      <Filter>SkeletalAnimation</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation.cpp">
+      <Filter>SkeletalAnimation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">

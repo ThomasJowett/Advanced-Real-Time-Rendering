@@ -33,14 +33,12 @@ public:
 	XMMATRIX GetWorld()const;
 	void SetWorld(CXMMATRIX M);
 
-	void Init(ID3D11Device* device, ID3D11DeviceContext* deviceContext, const InitInfo& initInfo);
+	void Init(ID3D11Device* device, ID3D11DeviceContext* deviceContext, const InitInfo& initInfo, std::vector<float> heightmapData);
 
 	void Draw(ID3D11DeviceContext* deviceContext, Light light, Camera* camera, ShadowMap* pShadowMap);
 
 	void DrawToShadowMap(ID3D11DeviceContext* deviceContext, ShadowMapConstantBuffer &cb, Camera* camera);
 private:
-
-	void LoadHeightMap();
 	void Smooth();
 	bool InBounds(int i, int j);
 	float Average(int i, int j);
