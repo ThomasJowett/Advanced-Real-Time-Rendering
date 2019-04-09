@@ -72,12 +72,33 @@ std::vector<float> ProceduralLandscape::FaultLine(Terrain::InitInfo tii)
 
 		for (int j = 0; j < tii.HeightMapWidth; j++)
 		{
-			array[i][j] = Random::FloatInRange(0.0f, tii.HeightScale);
+			array[i][j] = 0.0f;
 		}
 	}
 
+	for (int k = 0; k < 400; k++)
+	{
+		float v = rand();
+		float a = sin(v);
+		float b = cos(v);
+		float d = sqrt(tii.HeightMapWidth * tii.HeightMapWidth + tii.HeightMapHeight * tii.HeightMapHeight);
+		float c = (rand() / RAND_MAX) * d - d / 2;
 
-
+		for (int i = 0; i < tii.HeightMapHeight; i++)
+		{
+			for (int j = 0; j < tii.HeightMapWidth; j++)
+			{
+				if (a*i + b * j - c > 0)
+				{
+					array[i][j] += 1.0f;
+				}
+				else
+				{
+					array[i][j] -= 1.0f;
+				}
+			}
+		}
+	}
 	std::vector<float> returnHeightMap;
 
 	for (int i = 0; i < tii.HeightMapHeight; i++)

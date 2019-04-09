@@ -289,7 +289,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	tii.HeightMapHeight = 2049;
 	tii.CellSpacing = 0.5f;
 
-	_terrain.Init(_pd3dDevice, _pImmediateContext, tii, ProceduralLandscape::DiamondSquare(tii));
+	_terrain.Init(_pd3dDevice, _pImmediateContext, tii, ProceduralLandscape::FaultLine(tii));
 
 
 	_character = new AnimatedModel(modelData, _pDiffuseManTextureRV, _pd3dDevice);
@@ -1085,6 +1085,8 @@ void Application::DrawSceneToShadowMap()
 
 	_pImmediateContext->IASetInputLayout(_pSkinnedLayout);
 	_pImmediateContext->VSSetShader(_pSkinnedVertexShader, nullptr, 0);
+	_pImmediateContext->HSSetShader(nullptr, nullptr, 0);
+	_pImmediateContext->DSSetShader(nullptr, nullptr, 0);
 
 	SkinnedConstantBuffer skinCb;
 
