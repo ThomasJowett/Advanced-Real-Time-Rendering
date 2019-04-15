@@ -289,7 +289,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	tii.HeightMapHeight = 2049;
 	tii.CellSpacing = 0.5f;
 
-	_terrain.Init(_pd3dDevice, _pImmediateContext, tii, ProceduralLandscape::FaultLine(tii));
+	_terrain.Init(_pd3dDevice, _pImmediateContext, tii, ProceduralLandscape::DiamondSquare(tii));
 
 
 	_character = new AnimatedModel(modelData, _pDiffuseManTextureRV, _pd3dDevice);

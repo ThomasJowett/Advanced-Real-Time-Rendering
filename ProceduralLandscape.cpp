@@ -76,29 +76,40 @@ std::vector<float> ProceduralLandscape::FaultLine(Terrain::InitInfo tii)
 		}
 	}
 
-	for (int k = 0; k < 400; k++)
+	for (int k = 0; k < 1000; k++)
 	{
-		float v = rand();
-		float a = sin(v);
-		float b = cos(v);
-		float d = sqrt(tii.HeightMapWidth * tii.HeightMapWidth + tii.HeightMapHeight * tii.HeightMapHeight);
-		float c = (rand() / RAND_MAX) * d - d / 2;
+		float x1 = Random::FloatInRange(0.0f, tii.HeightMapWidth);
+		float z1 = Random::FloatInRange(0.0f, tii.HeightMapHeight);
+		float x2 = Random::FloatInRange(0.0f, tii.HeightMapWidth);
+		float z2 = Random::FloatInRange(0.0f, tii.HeightMapHeight);
+
+		float displacement = 0.5f + (k / 1000) * (tii.HeightScale - 0.5f);
 
 		for (int i = 0; i < tii.HeightMapHeight; i++)
 		{
 			for (int j = 0; j < tii.HeightMapWidth; j++)
 			{
-				if (a*i + b * j - c > 0)
+				float dist = ((x2 - x1) * (i - z1) - (z2 - z1) * (j - x1));
+				if (dist > 0 && dist < XM_PIDIV2)
 				{
-					array[i][j] += 1.0f;
+					array[i][j] += displacement * sin(dist);
+				}
+				else if(dist <0 && dist > - XM_PIDIV2)
+				{
+					array[i][j] -= displacement *sin(dist);
+				}
+				else if (dist > 0)
+				{
+					array[i][j] += displacement;
 				}
 				else
 				{
-					array[i][j] -= 1.0f;
+					array[i][j] -= displacement;
 				}
 			}
 		}
 	}
+
 	std::vector<float> returnHeightMap;
 
 	for (int i = 0; i < tii.HeightMapHeight; i++)
