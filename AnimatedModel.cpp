@@ -93,8 +93,6 @@ void AnimatedModel::ApplyPoseToJoints(std::map<std::string, XMFLOAT4X4> currentP
 
 	XMFLOAT4X4 currentTransformAsFloats;
 
-	
-
 	for (Joint* childJoint : joint->_children)
 	{
 		XMStoreFloat4x4(&currentTransformAsFloats, currentTransform);

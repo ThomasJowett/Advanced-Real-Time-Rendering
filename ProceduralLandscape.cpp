@@ -76,14 +76,14 @@ std::vector<float> ProceduralLandscape::FaultLine(Terrain::InitInfo tii)
 		}
 	}
 
-	for (int k = 0; k < 1000; k++)
+	for (int k = 0; k < 4000; k++)
 	{
 		float x1 = Random::FloatInRange(0.0f, tii.HeightMapWidth);
 		float z1 = Random::FloatInRange(0.0f, tii.HeightMapHeight);
 		float x2 = Random::FloatInRange(0.0f, tii.HeightMapWidth);
 		float z2 = Random::FloatInRange(0.0f, tii.HeightMapHeight);
 
-		float displacement = 0.5f + (k / 1000) * (tii.HeightScale - 0.5f);
+		float displacement = 0.5f + (k / 4000) * (tii.HeightScale - 0.5f);
 
 		for (int i = 0; i < tii.HeightMapHeight; i++)
 		{

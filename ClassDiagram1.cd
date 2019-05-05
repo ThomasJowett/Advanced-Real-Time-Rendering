@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="AnimatedModel">
+    <Position X="29" Y="14.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gSQABEUAAAAEAgAAAUBACEEAQgRIAAAKiAAAgAAAAAA=</HashCode>
+      <FileName>AnimatedModel.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Animation">
+    <Position X="30.75" Y="14.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAABAQAAAAhAAAAAAEAAAAAAAABAAAAAAAAAA=</HashCode>
+      <FileName>Animation.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Joint">
+    <Position X="32.5" Y="14.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQIIACAAAAEAABCAAgAEAAAAAAAggAAAAAACAAAAA=</HashCode>
+      <FileName>Joint.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="JointTransform">
+    <Position X="24.25" Y="16.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAIAAAAAAAAAAAQAAAAAAAAAAAEAAAAAACAgAAAQAA=</HashCode>
+      <FileName>JointTransform.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="KeyFrame">
+    <Position X="24.25" Y="14.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>EAAAAQAAAAAAAAAAAAAAAAAAAAIAAAAQAAAAAAAAAAg=</HashCode>
+      <FileName>KeyFrame.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Terrain">
+    <Position X="29" Y="20.5" Width="2.25" />
+    <NestedTypes>
+      <Struct Name="Terrain::InitInfo" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Terrain.h</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>ICEICAGAQQACEgAARAAAAgBEABggAICAqEAjEEkABMA=</HashCode>
+      <FileName>Terrain.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

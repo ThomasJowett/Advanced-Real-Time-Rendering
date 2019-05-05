@@ -11,7 +11,6 @@
 #include "imGUI/imgui_impl_dx11.h"
 #include "imGUI/imgui_impl_win32.h"
 
-
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	PAINTSTRUCT ps;
@@ -289,7 +288,7 @@ HRESULT Application::Initialise(HINSTANCE hInstance, int nCmdShow)
 	tii.HeightMapHeight = 2049;
 	tii.CellSpacing = 0.5f;
 
-	_terrain.Init(_pd3dDevice, _pImmediateContext, tii, ProceduralLandscape::DiamondSquare(tii));
+	_terrain.Init(_pd3dDevice, _pImmediateContext, tii, ProceduralLandscape::LoadHeightMap(tii));
 
 
 	_character = new AnimatedModel(modelData, _pDiffuseManTextureRV, _pd3dDevice);
