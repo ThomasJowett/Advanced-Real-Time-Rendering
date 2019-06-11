@@ -1356,7 +1356,7 @@ void Application::Update(float deltaTime)
 
 	counter+= deltaTime;
 
-	basicLight.Direction.x = sin(counter)*10;
+	//basicLight.Direction.x = sin(counter)*10;
 
 	_pShadowMap->BuildShadowTransforms(basicLight, _camera->GetPosition());
 }
